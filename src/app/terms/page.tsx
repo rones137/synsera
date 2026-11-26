@@ -14,7 +14,7 @@ export default function Page() {
           <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
             <Badge tone="brand" className="mb-4">Synsera</Badge>
             <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Terms of Service</h1>
-            <p className="mt-4 text-lg text-text-secondary">Illustrative legal placeholder for Stage 1. Formal counsel review accompanies production launch.</p>
+            <p className="mt-4 text-lg text-text-secondary">Draft terms for early Synsera access. Formal counsel review accompanies production launch.</p>
             <div className="mt-8 flex justify-center gap-3">
               <Link href="/register"><Button size="lg">Get started</Button></Link>
               <Link href="/app"><Button size="lg" variant="secondary">Open demo</Button></Link>

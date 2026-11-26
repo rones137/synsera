@@ -12,13 +12,15 @@ import { useApp } from "@/lib/store";
 export default function ImportPage() {
   const { importExpenses } = useApp();
   const router = useRouter();
-  const [text, setText] = useState(SAMPLE_CSV.trim());
+  const [text, setText] = useState("");
   const [msg, setMsg] = useState("");
 
   function onImport() {
     const items = parseExpenseCsv(text);
     if (!items.length) {
-      setMsg("No valid rows found. Check headers: name,merchant,amount,cycle,nextBillingDate,category,paymentMethod");
+      setMsg(
+        "No valid rows. Headers: name,merchant,amount,cycle,nextBillingDate,category,paymentMethod",
+      );
       return;
     }
     const n = importExpenses(items);
@@ -30,24 +32,35 @@ export default function ImportPage() {
     <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader
         title="CSV import"
-        description="Paste or edit sample CSV — rows become recurring expenses (local persistence)."
+        description="Paste your recurring expenses in KES. Rows persist to your account (local or Supabase)."
       />
-      <div className="rounded-xl border border-border bg-bg-surface p-5 space-y-4">
+      <div className="space-y-4 rounded-xl border border-border bg-bg-surface p-5">
         <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
+          placeholder={`name,merchant,amount,cycle,nextBillingDate,category,paymentMethod\nInternet,Safaricom,4500,monthly,2026-12-01,Utilities,M-PESA`}
           className="min-h-[220px] font-mono text-xs"
         />
-        <div className="flex gap-2">
-          <Button onClick={onImport}>Import expenses</Button>
-          <Button variant="secondary" onClick={() => setText(SAMPLE_CSV.trim())}>
-            Reset sample
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={onImport} disabled={!text.trim()}>
+            Import expenses
           </Button>
+          <Button
+            variant="secondary"
+            onClick={() => setText(SAMPLE_CSV.trim())}
+          >
+            Load example CSV
+          </Button>
+          {text && (
+            <Button variant="ghost" onClick={() => setText("")}>
+              Clear
+            </Button>
+          )}
         </div>
         {msg && <p className="text-sm text-brand">{msg}</p>}
         <p className="text-xs text-text-secondary">
-          Sample file also at <code className="text-text-primary">/samples/expenses.csv</code>.
-          No bank passwords required.
+          Example also at <code className="text-text-primary">/samples/expenses.csv</code>.
+          We never ask for bank passwords.
         </p>
       </div>
     </div>

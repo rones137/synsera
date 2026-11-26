@@ -19,19 +19,33 @@ export default function BusinessExpensesPage() {
     <div className="mx-auto max-w-6xl space-y-6">
       <PageHeader
         title="Business expenses"
-        description="Company recurring spend — add via Personal expense form with Business workspace later, or track vendors."
+        description="Company recurring spend in KES — tag expenses as Business when adding."
         action={
-          <Button href="/business/vendors" size="sm" variant="secondary">
-            Vendors
-          </Button>
+          <div className="flex gap-2">
+            <Button href="/app/expenses/new" size="sm">
+              Add expense
+            </Button>
+            <Button href="/business/vendors" size="sm" variant="secondary">
+              Vendors
+            </Button>
+          </div>
         }
       />
       {rows.length === 0 ? (
         <EmptyState
           icon={<Receipt size={22} />}
           title="No business expenses"
-          description="Nothing seeded. Import, add vendors, or create purchase requests to start tracking."
-          action={<Button href="/business/purchase-requests" size="sm">New purchase request</Button>}
+          description="Add an expense and set workspace to Business, or track vendors and purchase requests."
+          action={
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button href="/app/expenses/new" size="sm">
+                Add expense
+              </Button>
+              <Button href="/business/purchase-requests" size="sm" variant="secondary">
+                Purchase request
+              </Button>
+            </div>
+          }
         />
       ) : (
         <SimpleTable headers={["Name", "Category", "Status", "Amount"]}>

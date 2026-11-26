@@ -182,7 +182,7 @@ function SidebarInner({
             {WORKSPACE_META[workspace].label} · {user?.currency || "KES"}
           </p>
           <p className="text-[11px] text-text-secondary/80">
-            Your data · local until Supabase
+            Synsera · Kenya &amp; EA · KES
           </p>
           <button
             type="button"

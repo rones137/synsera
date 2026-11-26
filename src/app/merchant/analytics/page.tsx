@@ -12,7 +12,7 @@ export default function MerchantAnalyticsPage() {
   const churnRisk = customers.filter((c) => c.status === "past_due" || c.status === "cancelled").length;
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <PageHeader title="Analytics" description="MRR and plan mix — deterministic demo maths." />
+      <PageHeader title="Analytics" description="MRR and plan mix from your plans and customers." />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="MRR" value={formatKES(mrr)} emphasize />
         <StatCard label="Customers" value={String(customers.length)} />

@@ -1,24 +1,57 @@
 "use client";
-import { useState } from "react";
+
+import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { useTheme, type ThemeMode } from "@/components/theme/theme-provider";
 
+const KEY = "synsera-business-settings";
+
+type BizSettings = {
+  company: string;
+  tin: string;
+  approvals: boolean;
+};
+
+function load(): BizSettings {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) return JSON.parse(raw) as BizSettings;
+  } catch {
+    /* ignore */
+  }
+  return { company: "", tin: "", approvals: true };
+}
+
 export default function BusinessSettingsPage() {
   const { theme, setTheme } = useTheme();
   const [saved, setSaved] = useState(false);
-  const [company, setCompany] = useState("Rolys Ventures Ltd");
-  const [tin, setTin] = useState("P051234567X");
+  const [company, setCompany] = useState("");
+  const [tin, setTin] = useState("");
   const [approvals, setApprovals] = useState(true);
+
+  useEffect(() => {
+    const s = load();
+    setCompany(s.company);
+    setTin(s.tin);
+    setApprovals(s.approvals);
+  }, []);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <PageHeader title="Business settings" description="Company profile, approval policy, and display." sample={false} />
+      <PageHeader
+        title="Business settings"
+        description="Company profile, approval policy, and display."
+      />
       <form
         className="space-y-5 rounded-xl border border-border bg-bg-surface p-5"
         onSubmit={(e) => {
           e.preventDefault();
+          localStorage.setItem(
+            KEY,
+            JSON.stringify({ company, tin, approvals } satisfies BizSettings),
+          );
           setSaved(true);
           window.setTimeout(() => setSaved(false), 2000);
         }}
@@ -27,11 +60,21 @@ export default function BusinessSettingsPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <Label htmlFor="company">Legal name</Label>
-            <Input id="company" value={company} onChange={(e) => setCompany(e.target.value)} />
+            <Input
+              id="company"
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+              placeholder="Your company Ltd"
+            />
           </div>
           <div>
             <Label htmlFor="tin">KRA PIN</Label>
-            <Input id="tin" value={tin} onChange={(e) => setTin(e.target.value)} />
+            <Input
+              id="tin"
+              value={tin}
+              onChange={(e) => setTin(e.target.value)}
+              placeholder="P0XXXXXXXXX"
+            />
           </div>
           <div>
             <Label htmlFor="currency">Reporting currency</Label>
@@ -62,7 +105,9 @@ export default function BusinessSettingsPage() {
           />
           Require approval for purchases above KSh 5,000
         </label>
-        <p className="text-xs text-text-secondary">Synsera never asks for bank passwords or M-PESA PINs.</p>
+        <p className="text-xs text-text-secondary">
+          Synsera never asks for bank passwords or M-PESA PINs.
+        </p>
         <Button type="submit">{saved ? "Saved" : "Save settings"}</Button>
       </form>
     </div>

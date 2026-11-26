@@ -93,12 +93,12 @@ export function HomePage() {
                 <ArrowRight size={18} />
               </Button>
               <Button
-                href="/app"
+                href="/login"
                 size="lg"
                 variant="outline"
                 className="min-w-[168px] bg-bg-surface/40 backdrop-blur-sm"
               >
-                Open demo
+                Log in
               </Button>
             </div>
           </div>
@@ -113,13 +113,13 @@ export function HomePage() {
               <p className="text-xs font-medium tracking-wide text-text-secondary">
                 Synsera Personal · Overview
               </p>
-              <Badge tone="sample">Illustrative sample</Badge>
+              <Badge tone="neutral">Empty workspace preview</Badge>
             </div>
             <div className="grid gap-3 p-4 sm:grid-cols-3 sm:gap-4 sm:p-5">
               {[
-                { label: "Monthly recurring", value: formatKES(22569), hint: "This month · KES" },
-                { label: "Next 7 days", value: formatKES(3350), hint: "Due soon" },
-                { label: "Potential savings", value: formatKES(1570), hint: "Estimate only" },
+                { label: "Monthly recurring", value: formatKES(0), hint: "Add expenses to track" },
+                { label: "Next 7 days", value: formatKES(0), hint: "Nothing due yet" },
+                { label: "Potential savings", value: formatKES(0), hint: "After you add data" },
               ].map((s) => (
                 <div
                   key={s.label}
@@ -135,26 +135,9 @@ export function HomePage() {
               <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.08em] text-text-secondary">
                 Upcoming
               </p>
-              <ul className="space-y-2">
-                {[
-                  ["Netflix Premium", "28 Nov", 1400],
-                  ["Microsoft 365", "27 Nov", 1100],
-                  ["Spotify Family", "30 Nov", 850],
-                ].map(([name, date, amt]) => (
-                  <li
-                    key={String(name)}
-                    className="flex items-center justify-between gap-3 rounded-lg bg-bg-app px-3 py-2.5 text-sm"
-                  >
-                    <span className="min-w-0 truncate font-medium text-text-primary">
-                      {name}
-                    </span>
-                    <span className="shrink-0 text-text-secondary">{date}</span>
-                    <span className="money shrink-0 font-medium tabular">
-                      {formatKES(Number(amt))}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <p className="rounded-lg border border-dashed border-border bg-bg-app px-3 py-6 text-center text-sm text-text-secondary">
+                No renewals yet — start free and add your first KES expense.
+              </p>
             </div>
           </div>
           <p className="mt-3 text-center text-xs text-text-secondary">
@@ -244,19 +227,19 @@ export function HomePage() {
                 icon: User,
                 title: "Personal",
                 body: "Detect, track, warn, forecast, and manage household recurring spend with family-ready views.",
-                tag: "Available in MVP",
+                tag: "Live",
               },
               {
                 icon: Building2,
                 title: "Business",
                 body: "Software, vendors, contracts, budgets, and licenses — built for Kenya/EA freelancers and SMEs.",
-                tag: "Coming next",
+                tag: "Live",
               },
               {
                 icon: Shield,
                 title: "Merchant Billing",
                 body: "Plans, checkout, and renewals via payment-provider adapters. We never hold funds or raw cards.",
-                tag: "Later stage",
+                tag: "Live",
               },
             ].map((w) => (
               <div
@@ -348,7 +331,7 @@ export function HomePage() {
               Simple plans for Kenya first
             </h2>
             <p className="mt-4 text-text-secondary">
-              Illustrative KES pricing for validation. Early access helps prove verified
+              Early KES pricing for Kenya &amp; East Africa. Early access helps prove verified
               value before we lock rates.
             </p>
           </div>

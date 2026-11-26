@@ -66,13 +66,18 @@ type Ctx = State & {
   decidePurchase: (id: string, status: Exclude<PurchaseStatus, "pending">, note?: string) => void;
   addPurchase: (title: string, amount: number, requester: string) => void;
   addVendor: (v: Omit<Vendor, "id" | "contracts">) => void;
+  addContract: (c: Omit<Contract, "id" | "status"> & { status?: Contract["status"] }) => void;
   updateContract: (id: string, patch: Partial<Contract>) => void;
+  addLicense: (l: Omit<License, "id">) => void;
   reclaimLicense: (id: string) => void;
+  addBudget: (b: Omit<Budget, "id" | "spent"> & { spent?: number }) => void;
+  addTeamMember: (t: Omit<TeamMember, "id">) => void;
   addPlan: (name: string, price: number) => void;
   togglePlan: (id: string) => void;
   addCustomer: (name: string, plan: string, email: string) => void;
   retryInvoice: (id: string) => void;
   addDiscount: (code: string, type: "percent" | "fixed", value: number) => void;
+  addWebhook: (url: string, events: string) => void;
   toggleWebhook: (id: string) => void;
   inviteFamily: (name: string) => void;
   removeFamily: (id: string) => void;
@@ -154,7 +159,7 @@ export function WorkspaceDataProvider({ children }: { children: ReactNode }) {
         audit: [
           {
             id: `a-${Date.now()}`,
-            actor: "Blaise",
+            actor: "You",
             action: `${status === "approved" ? "Approved" : "Rejected"} ${s.purchases.find((p) => p.id === id)?.title || id}`,
             at: stamp(),
           },
@@ -189,10 +194,72 @@ export function WorkspaceDataProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const addContract = useCallback(
+    (c: Omit<Contract, "id" | "status"> & { status?: Contract["status"] }) => {
+      setState((s) => ({
+        ...s,
+        contracts: [
+          {
+            id: `ct-${Date.now()}`,
+            status: c.status || "active",
+            name: c.name,
+            vendor: c.vendor,
+            renews: c.renews,
+            noticeDays: c.noticeDays,
+            value: c.value,
+          },
+          ...s.contracts,
+        ],
+        vendors: s.vendors.map((v) =>
+          v.name === c.vendor ? { ...v, contracts: v.contracts + 1 } : v,
+        ),
+        audit: [
+          {
+            id: `a-${Date.now()}`,
+            actor: "You",
+            action: `Added contract ${c.name}`,
+            at: stamp(),
+          },
+          ...s.audit,
+        ],
+      }));
+    },
+    [],
+  );
+
   const updateContract = useCallback((id: string, patch: Partial<Contract>) => {
     setState((s) => ({
       ...s,
       contracts: s.contracts.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+    }));
+  }, []);
+
+  const addLicense = useCallback((l: Omit<License, "id">) => {
+    setState((s) => ({
+      ...s,
+      licenses: [{ ...l, id: `lic-${Date.now()}` }, ...s.licenses],
+    }));
+  }, []);
+
+  const addBudget = useCallback((b: Omit<Budget, "id" | "spent"> & { spent?: number }) => {
+    setState((s) => ({
+      ...s,
+      budgets: [
+        {
+          id: `bd-${Date.now()}`,
+          dept: b.dept,
+          limit: b.limit,
+          spent: b.spent ?? 0,
+        },
+        ...s.budgets,
+      ],
+    }));
+  }, []);
+
+  const addTeamMember = useCallback((t: Omit<TeamMember, "id">) => {
+    setState((s) => ({
+      ...s,
+      teams: [{ ...t, id: `tm-${Date.now()}` }, ...s.teams],
     }));
   }, []);
 
@@ -211,7 +278,7 @@ export function WorkspaceDataProvider({ children }: { children: ReactNode }) {
       audit: [
         {
           id: `a-${Date.now()}`,
-          actor: "Blaise",
+          actor: "You",
           action: `Reclaimed waste seats on ${s.licenses.find((l) => l.id === id)?.name}`,
           at: stamp(),
         },
@@ -245,25 +312,58 @@ export function WorkspaceDataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addCustomer = useCallback((name: string, plan: string, email: string) => {
-    const price =
-      state.plans.find((p) => p.name === plan)?.price ||
-      state.plans[0]?.price ||
-      999;
+    setState((s) => {
+      const price =
+        s.plans.find((p) => p.name === plan)?.price ||
+        s.plans[0]?.price ||
+        0;
+      const due = new Date();
+      due.setDate(due.getDate() + 14);
+      const dueStr = due.toISOString().slice(0, 10);
+      return {
+        ...s,
+        customers: [
+          {
+            id: `mc-${Date.now()}`,
+            name,
+            plan,
+            mrr: price,
+            status: "trialing",
+            email,
+          },
+          ...s.customers,
+        ],
+        invoices: [
+          {
+            id: `inv-${Date.now()}`,
+            customer: name,
+            amount: price,
+            status: "open" as const,
+            due: dueStr,
+          },
+          ...s.invoices,
+        ],
+        plans: s.plans.map((p) =>
+          p.name === plan ? { ...p, subscribers: p.subscribers + 1 } : p,
+        ),
+      };
+    });
+  }, []);
+
+  const addWebhook = useCallback((url: string, events: string) => {
     setState((s) => ({
       ...s,
-      customers: [
+      webhooks: [
         {
-          id: `mc-${Date.now()}`,
-          name,
-          plan,
-          mrr: price,
-          status: "trialing",
-          email,
+          id: `wh-${Date.now()}`,
+          url,
+          events,
+          status: "active",
         },
-        ...s.customers,
+        ...s.webhooks,
       ],
     }));
-  }, [state.plans]);
+  }, []);
 
   const retryInvoice = useCallback((id: string) => {
     setState((s) => ({
@@ -369,13 +469,18 @@ export function WorkspaceDataProvider({ children }: { children: ReactNode }) {
       decidePurchase,
       addPurchase,
       addVendor,
+      addContract,
       updateContract,
+      addLicense,
       reclaimLicense,
+      addBudget,
+      addTeamMember,
       addPlan,
       togglePlan,
       addCustomer,
       retryInvoice,
       addDiscount,
+      addWebhook,
       toggleWebhook,
       inviteFamily,
       removeFamily,
@@ -391,13 +496,18 @@ export function WorkspaceDataProvider({ children }: { children: ReactNode }) {
       decidePurchase,
       addPurchase,
       addVendor,
+      addContract,
       updateContract,
+      addLicense,
       reclaimLicense,
+      addBudget,
+      addTeamMember,
       addPlan,
       togglePlan,
       addCustomer,
       retryInvoice,
       addDiscount,
+      addWebhook,
       toggleWebhook,
       inviteFamily,
       removeFamily,

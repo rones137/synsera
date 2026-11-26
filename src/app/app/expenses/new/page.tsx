@@ -29,9 +29,14 @@ export default function NewExpensePage() {
       category: String(fd.get("category")),
       paymentMethod: String(fd.get("paymentMethod")),
       notes: String(fd.get("notes") || "") || undefined,
-      workspace: "personal",
+      workspace: (String(fd.get("workspace") || "personal") as
+        | "personal"
+        | "business"
+        | "merchant"),
     });
-    router.push("/app/expenses");
+    router.push(
+      String(fd.get("workspace")) === "business" ? "/business/expenses" : "/app/expenses",
+    );
   }
 
   return (
@@ -46,7 +51,8 @@ export default function NewExpensePage() {
         </Link>
         <h1 className="text-2xl font-semibold tracking-tight">Add expense</h1>
         <p className="mt-1 text-sm text-text-secondary">
-          Persists in localStorage for this demo. Never enter M-PESA PIN or bank passwords.
+          Saves to your Synsera workspace (local or Supabase). Never enter M-PESA PIN or bank
+          passwords.
         </p>
       </div>
 
@@ -56,11 +62,11 @@ export default function NewExpensePage() {
       >
         <div>
           <Label htmlFor="name">Name</Label>
-          <Input id="name" name="name" placeholder="e.g. Netflix Premium" required />
+          <Input id="name" name="name" placeholder="e.g. Internet fibre" required />
         </div>
         <div>
           <Label htmlFor="merchant">Merchant</Label>
-          <Input id="merchant" name="merchant" placeholder="e.g. Netflix" />
+          <Input id="merchant" name="merchant" placeholder="e.g. Safaricom" />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
@@ -70,7 +76,7 @@ export default function NewExpensePage() {
               name="amount"
               type="number"
               min={1}
-              placeholder="1400"
+              placeholder="4500"
               required
               className="money"
             />
@@ -92,13 +98,12 @@ export default function NewExpensePage() {
               id="nextBillingDate"
               name="nextBillingDate"
               type="date"
-              defaultValue="2026-12-15"
               required
             />
           </div>
           <div>
             <Label htmlFor="category">Category</Label>
-            <Select id="category" name="category" defaultValue="Software">
+            <Select id="category" name="category" defaultValue="Utilities">
               <option>Entertainment</option>
               <option>Software</option>
               <option>Utilities</option>
@@ -108,12 +113,18 @@ export default function NewExpensePage() {
           </div>
         </div>
         <div>
+          <Label htmlFor="workspace">Workspace</Label>
+          <Select id="workspace" name="workspace" defaultValue="personal">
+            <option value="personal">Personal</option>
+            <option value="business">Business</option>
+          </Select>
+        </div>
+        <div>
           <Label htmlFor="paymentMethod">Payment method</Label>
           <Select id="paymentMethod" name="paymentMethod" defaultValue="M-PESA AutoPay">
             <option>M-PESA AutoPay</option>
             <option>M-PESA Till</option>
-            <option>Card ···· 4281</option>
-            <option>Card ···· 8820</option>
+            <option>Card</option>
             <option>Bank transfer</option>
             <option>Manual</option>
           </Select>

@@ -36,7 +36,7 @@ export default function SubscriptionsPage() {
         <EmptyState
           icon={<CreditCard size={22} />}
           title="No subscriptions yet"
-          description="Add Netflix, Adobe, Showmax, or any recurring software."
+          description="Add Showmax, Spotify, Microsoft 365, or any recurring software — amounts in KES."
           action={
             <Link href="/app/expenses/new">
               <Button>Add your first</Button>

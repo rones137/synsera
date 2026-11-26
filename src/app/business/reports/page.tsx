@@ -18,7 +18,7 @@ export default function BusinessReportsPage() {
                   vendors: data.vendors.length,
                   contracts: data.contracts.length,
                   purchases: data.purchases,
-                  note: "Synsera Business demo export",
+                  note: "Synsera Business export",
                 },
                 null,
                 2,

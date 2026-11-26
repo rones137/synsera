@@ -18,7 +18,7 @@ function BlacklistPanel() {
     <div className="rounded-xl border border-border bg-bg-surface p-5 space-y-4">
       <h2 className="font-semibold">Merchant blacklist</h2>
       <p className="text-sm text-text-secondary">
-        Flag merchants you do not want to resubscribe to. Local demo only.
+        Flag merchants you do not want to resubscribe to. Saved with your workspace data.
       </p>
       <ul className="space-y-2">
         {blacklist.map((b) => (
