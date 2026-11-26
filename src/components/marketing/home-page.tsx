@@ -84,17 +84,22 @@ export function HomePage() {
               recurring payment and renewal.
             </p>
             <div className="animate-fade-up-delay-2 mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link href="/register">
-                <Button size="lg" className="min-w-[168px] shadow-[0_0_0_1px_rgba(227,50,64,0.3),0_8px_24px_rgba(227,50,64,0.25)]">
-                  Start free
-                  <ArrowRight size={18} />
-                </Button>
-              </Link>
-              <Link href="/app">
-                <Button size="lg" variant="outline" className="min-w-[168px] bg-bg-surface/40 backdrop-blur-sm">
-                  Open demo
-                </Button>
-              </Link>
+              <Button
+                href="/register"
+                size="lg"
+                className="min-w-[168px] shadow-[0_0_0_1px_rgba(227,50,64,0.3),0_8px_24px_rgba(227,50,64,0.25)]"
+              >
+                Start free
+                <ArrowRight size={18} />
+              </Button>
+              <Button
+                href="/app"
+                size="lg"
+                variant="outline"
+                className="min-w-[168px] bg-bg-surface/40 backdrop-blur-sm"
+              >
+                Open demo
+              </Button>
             </div>
           </div>
         </div>
@@ -438,17 +443,13 @@ export function HomePage() {
             Personal, built for Kenya.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link href="/register">
-              <Button size="lg">
+            <Button href="/register" size="lg">
                 Create your account
                 <ArrowRight size={18} />
               </Button>
-            </Link>
-            <Link href="/app">
-              <Button size="lg" variant="ghost">
+            <Button href="/app" size="lg" variant="ghost">
                 Explore the demo
               </Button>
-            </Link>
           </div>
         </div>
       </section>

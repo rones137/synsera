@@ -5,7 +5,7 @@ export function PageHeader({
   title,
   description,
   action,
-  sample = true,
+  sample = false,
 }: {
   title: string;
   description?: string;
@@ -17,7 +17,7 @@ export function PageHeader({
       <div>
         {sample && (
           <Badge tone="sample" className="mb-2">
-            Illustrative sample data
+            Marketing preview
           </Badge>
         )}
         <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>

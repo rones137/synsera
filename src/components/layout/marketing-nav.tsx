@@ -45,14 +45,12 @@ export function MarketingNav() {
           >
             {resolved === "dark" ? <Sun size={17} /> : <Moon size={17} />}
           </button>
-          <Link href="/login">
-            <Button variant="ghost" size="sm">
-              Log in
-            </Button>
-          </Link>
-          <Link href="/register">
-            <Button size="sm">Get started</Button>
-          </Link>
+          <Button href="/login" variant="ghost" size="sm">
+            Log in
+          </Button>
+          <Button href="/register" size="sm">
+            Get started
+          </Button>
         </div>
         <button
           type="button"
@@ -81,16 +79,23 @@ export function MarketingNav() {
             </Link>
           ))}
           <div className="mt-2 flex gap-2 border-t border-border pt-3">
-            <Link href="/login" className="flex-1" onClick={() => setOpen(false)}>
-              <Button variant="secondary" className="w-full" size="sm">
-                Log in
-              </Button>
-            </Link>
-            <Link href="/register" className="flex-1" onClick={() => setOpen(false)}>
-              <Button className="w-full" size="sm">
-                Get started
-              </Button>
-            </Link>
+            <Button
+              href="/login"
+              variant="secondary"
+              className="w-full flex-1"
+              size="sm"
+              onClick={() => setOpen(false)}
+            >
+              Log in
+            </Button>
+            <Button
+              href="/register"
+              className="w-full flex-1"
+              size="sm"
+              onClick={() => setOpen(false)}
+            >
+              Get started
+            </Button>
           </div>
         </div>
       </div>

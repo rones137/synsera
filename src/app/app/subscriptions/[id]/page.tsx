@@ -135,9 +135,6 @@ export default function SubscriptionDetailPage() {
         </Link>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <Badge tone="sample" className="mb-2">
-              Illustrative sample
-            </Badge>
             <h1 className="text-2xl font-semibold tracking-tight">{expense.name}</h1>
             <p className="mt-1 text-sm text-text-secondary">
               {expense.merchant} · {expense.paymentMethod}

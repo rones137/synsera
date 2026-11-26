@@ -9,12 +9,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import {
-  DEMO_ACTIVITY,
-  DEMO_ALERTS,
-  DEMO_EXPENSES,
-  DEMO_USER,
-} from "./demo-data";
+import { DEFAULT_USER_PROFILE } from "./demo-data";
+import { APP_STORAGE_KEY, persistence } from "./persistence";
 import type {
   ActivityItem,
   AlertItem,
@@ -24,7 +20,7 @@ import type {
   WorkspaceKind,
 } from "./types";
 
-const STORAGE_KEY = "synsera-app-v1";
+const STORAGE_KEY = APP_STORAGE_KEY;
 
 export type NewExpenseInput = {
   name: string;
@@ -46,7 +42,7 @@ type Persisted = {
   expenses: RecurringExpense[];
   alerts: AlertItem[];
   activity: ActivityItem[];
-  hydratedDemo: boolean;
+  schemaVersion: number;
 };
 
 type AppContextValue = {
@@ -76,16 +72,15 @@ type AppContextValue = {
   markAllAlertsRead: () => void;
   addActivity: (item: Omit<ActivityItem, "id">) => void;
   importExpenses: (items: NewExpenseInput[]) => number;
-  resetDemoData: () => void;
+  clearWorkspaceData: () => void;
   deleteAccount: () => void;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
 
 function load(): Persisted | null {
-  if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = persistence.getItem(STORAGE_KEY);
     if (!raw) return null;
     return JSON.parse(raw) as Persisted;
   } catch {
@@ -94,11 +89,22 @@ function load(): Persisted | null {
 }
 
 function save(data: Persisted) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  persistence.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
 function stamp() {
   return new Date().toISOString();
+}
+
+function emptyPersisted(): Persisted {
+  return {
+    user: null,
+    workspace: "personal",
+    expenses: [],
+    alerts: [],
+    activity: [],
+    schemaVersion: 2,
+  };
 }
 
 function initialState(): Persisted {
@@ -107,41 +113,33 @@ function initialState(): Persisted {
     return {
       user: existing.user,
       workspace: existing.workspace || "personal",
-      expenses: existing.expenses?.length ? existing.expenses : DEMO_EXPENSES,
-      alerts: existing.alerts?.length ? existing.alerts : DEMO_ALERTS,
-      activity: existing.activity?.length ? existing.activity : DEMO_ACTIVITY,
-      hydratedDemo: true,
+      expenses: Array.isArray(existing.expenses) ? existing.expenses : [],
+      alerts: Array.isArray(existing.alerts) ? existing.alerts : [],
+      activity: Array.isArray(existing.activity) ? existing.activity : [],
+      schemaVersion: 2,
     };
   }
-  return {
-    user: null,
-    workspace: "personal",
-    expenses: DEMO_EXPENSES,
-    alerts: DEMO_ALERTS,
-    activity: DEMO_ACTIVITY,
-    hydratedDemo: true,
-  };
+  return emptyPersisted();
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [workspace, setWorkspaceState] = useState<WorkspaceKind>("personal");
-  const [expenses, setExpenses] = useState<RecurringExpense[]>(DEMO_EXPENSES);
-  const [alerts, setAlerts] = useState<AlertItem[]>(DEMO_ALERTS);
-  const [activity, setActivity] = useState<ActivityItem[]>(DEMO_ACTIVITY);
+  const [expenses, setExpenses] = useState<RecurringExpense[]>([]);
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [activity, setActivity] = useState<ActivityItem[]>([]);
 
   useEffect(() => {
+    // Drop legacy v1 demo fixtures if still present
+    persistence.removeItem("synsera-app-v1");
     const existing = initialState();
-    // Hydrate from localStorage after mount (SSR-safe)
-    queueMicrotask(() => {
-      setUser(existing.user);
-      setWorkspaceState(existing.workspace);
-      setExpenses(existing.expenses);
-      setAlerts(existing.alerts);
-      setActivity(existing.activity);
-      setReady(true);
-    });
+    setUser(existing.user);
+    setWorkspaceState(existing.workspace);
+    setExpenses(existing.expenses);
+    setAlerts(existing.alerts);
+    setActivity(existing.activity);
+    setReady(true);
   }, []);
 
   useEffect(() => {
@@ -152,18 +150,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
       expenses,
       alerts,
       activity,
-      hydratedDemo: true,
+      schemaVersion: 2,
     });
   }, [ready, user, workspace, expenses, alerts, activity]);
 
   const login = useCallback((email: string, _password: string, name?: string) => {
     setUser((prev) => {
-      if (prev && prev.email === email) return prev;
       return {
-        ...DEMO_USER,
+        ...DEFAULT_USER_PROFILE,
+        ...(prev || {}),
+        id: prev?.id || `user-${Date.now()}`,
         email,
-        name: name || prev?.name || DEMO_USER.name,
-        onboardingComplete: prev?.onboardingComplete ?? true,
+        name: name || prev?.name || "You",
+        onboardingComplete: true,
+        workspacesEnabled: ["personal", "business", "merchant"],
       };
     });
   }, []);
@@ -172,12 +172,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     (input: { name: string; email: string; password: string; country: string }) => {
       void input.password;
       setUser({
-        ...DEMO_USER,
+        ...DEFAULT_USER_PROFILE,
         id: `user-${Date.now()}`,
         name: input.name,
         email: input.email,
         country: input.country,
-        currency: input.country === "KE" ? "KES" : DEMO_USER.currency,
+        currency: input.country === "KE" ? "KES" : DEFAULT_USER_PROFILE.currency,
         onboardingComplete: false,
         workspacesEnabled: ["personal"],
       });
@@ -373,18 +373,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [addExpense, addActivity],
   );
 
-  const resetDemoData = useCallback(() => {
-    setExpenses(DEMO_EXPENSES);
-    setAlerts(DEMO_ALERTS);
-    setActivity(DEMO_ACTIVITY);
+  const clearWorkspaceData = useCallback(() => {
+    setExpenses([]);
+    setAlerts([]);
+    setActivity([]);
   }, []);
 
   const deleteAccount = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
+    persistence.removeItem(STORAGE_KEY);
+    persistence.removeItem("synsera-app-v1");
     setUser(null);
-    setExpenses(DEMO_EXPENSES);
-    setAlerts(DEMO_ALERTS);
-    setActivity(DEMO_ACTIVITY);
+    setExpenses([]);
+    setAlerts([]);
+    setActivity([]);
     setWorkspaceState("personal");
   }, []);
 
@@ -411,7 +412,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       markAllAlertsRead,
       addActivity,
       importExpenses,
-      resetDemoData,
+      clearWorkspaceData,
       deleteAccount,
     }),
     [
@@ -436,7 +437,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       markAllAlertsRead,
       addActivity,
       importExpenses,
-      resetDemoData,
+      clearWorkspaceData,
       deleteAccount,
     ],
   );

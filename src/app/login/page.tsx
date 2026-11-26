@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, Suspense, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
@@ -11,13 +11,19 @@ import { useApp } from "@/lib/store";
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const { login, user } = useApp();
+  const { login, user, ready } = useApp();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const next = params.get("next") || "/app";
 
-  if (user?.onboardingComplete) {
-    router.replace(params.get("next") || "/app");
-  }
+  useEffect(() => {
+    if (!ready) return;
+    if (user?.onboardingComplete) {
+      router.replace(next);
+    } else if (user && !user.onboardingComplete) {
+      router.replace("/onboarding");
+    }
+  }, [ready, user, router, next]);
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -30,11 +36,11 @@ function LoginForm() {
       return;
     }
     setLoading(true);
-    login(email, password);
+    login(email, password, "Blaise Rolys");
     window.setTimeout(() => {
       setLoading(false);
-      router.push(params.get("next") || "/app");
-    }, 400);
+      router.push(next.startsWith("/") ? next : "/app");
+    }, 200);
   }
 
   return (
@@ -89,6 +95,19 @@ function LoginForm() {
         <p className="text-center text-xs text-text-secondary">
           Demo auth persists in localStorage. Any password works.
         </p>
+        <Link
+          href="/app"
+          className="block text-center text-sm font-medium text-brand hover:underline"
+          onClick={() => {
+            try {
+              localStorage.setItem("synsera-skip-auth", "1");
+            } catch {
+              /* ignore */
+            }
+          }}
+        >
+          Skip — open demo workspace
+        </Link>
       </form>
     </AuthShell>
   );
@@ -96,7 +115,11 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="p-10 text-center text-sm text-text-secondary">Loading…</div>}>
+    <Suspense
+      fallback={
+        <div className="p-10 text-center text-sm text-text-secondary">Loading…</div>
+      }
+    >
       <LoginForm />
     </Suspense>
   );

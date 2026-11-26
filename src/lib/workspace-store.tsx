@@ -36,8 +36,9 @@ import {
   type Vendor,
   type WebhookEndpoint,
 } from "./business-data";
+import { WORKSPACE_STORAGE_KEY, persistence } from "./persistence";
 
-const KEY = "synsera-workspace-v1";
+const KEY = WORKSPACE_STORAGE_KEY;
 
 type State = {
   vendors: Vendor[];
@@ -97,28 +98,17 @@ const defaults = (): State => ({
   invoices: INITIAL_INVOICES,
   discounts: INITIAL_DISCOUNTS,
   webhooks: INITIAL_WEBHOOKS,
-  familyMembers: [
-    { id: "f1", name: "You", role: "Owner" },
-    { id: "f2", name: "Amina", role: "Viewer" },
-  ],
-  graveyard: [
-    { id: "g1", name: "Old VPN sub", amount: 800, cancelledAt: "2026-09-01" },
-  ],
-  blacklist: [
-    { id: "bl1", merchant: "LootBox Games", reason: "Impulse spend" },
-  ],
-  fxWatch: [
-    { pair: "USD/KES", rate: 129.4, note: "Illustrative mid · watch SaaS invoices" },
-    { pair: "EUR/KES", rate: 140.1, note: "Illustrative mid" },
-  ],
+  familyMembers: [{ id: "f-self", name: "You", role: "Owner" }],
+  graveyard: [],
+  blacklist: [],
+  fxWatch: [],
   emergencyMode: false,
-  healthScore: 72,
+  healthScore: 100,
 });
 
 function load(): State | null {
-  if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = persistence.getItem(KEY);
     return raw ? (JSON.parse(raw) as State) : null;
   } catch {
     return null;
@@ -130,16 +120,24 @@ export function WorkspaceDataProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<State>(defaults);
 
   useEffect(() => {
+    persistence.removeItem("synsera-workspace-v1");
     const existing = load();
-    queueMicrotask(() => {
-      if (existing) setState({ ...defaults(), ...existing });
-      setReady(true);
-    });
+    if (existing) {
+      setState({
+        ...defaults(),
+        ...existing,
+        // Never rehydrate fake seed arrays if somehow present empty-merge wrong
+        familyMembers: existing.familyMembers?.length
+          ? existing.familyMembers
+          : defaults().familyMembers,
+      });
+    }
+    setReady(true);
   }, []);
 
   useEffect(() => {
     if (!ready) return;
-    localStorage.setItem(KEY, JSON.stringify(state));
+    persistence.setItem(KEY, JSON.stringify(state));
   }, [ready, state]);
 
   const stamp = () => new Date().toISOString();

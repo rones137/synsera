@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
@@ -16,22 +16,23 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(0);
   const [workspace, setWorkspace] = useState<WorkspaceKind>("personal");
 
-  if (!ready) {
+  useEffect(() => {
+    if (!ready) return;
+    if (!user) {
+      router.replace("/register");
+      return;
+    }
+    if (user.onboardingComplete) {
+      router.replace("/app");
+    }
+  }, [ready, user, router]);
+
+  if (!ready || !user || user.onboardingComplete) {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-text-secondary">
         Loading…
       </div>
     );
-  }
-
-  if (!user) {
-    router.replace("/register");
-    return null;
-  }
-
-  if (user.onboardingComplete) {
-    router.replace("/app");
-    return null;
   }
 
   function next() {

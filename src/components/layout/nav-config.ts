@@ -99,8 +99,8 @@ export const WORKSPACE_META = {
 
 export const MARKETING_LINKS = [
   { href: "/personal", label: "Personal" },
-  { href: "/business", label: "Business" },
-  { href: "/merchant", label: "Merchant" },
+  { href: "/for-business", label: "Business" },
+  { href: "/for-merchant", label: "Merchant" },
   { href: "/features", label: "Features" },
   { href: "/pricing", label: "Pricing" },
   { href: "/security", label: "Security" },

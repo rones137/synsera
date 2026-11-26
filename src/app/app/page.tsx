@@ -12,7 +12,7 @@ import {
   TrendingUp,
   Wallet,
 } from "lucide-react";
-import { Badge, StatusBadge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StatCard, StatCardSkeleton } from "@/components/ui/stat-card";
 import { TableSkeleton } from "@/components/ui/skeleton";
@@ -51,23 +51,17 @@ export default function DashboardPage() {
     <div className="mx-auto max-w-6xl space-y-7">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <Badge tone="sample" className="mb-3">
-            Illustrative sample data
-          </Badge>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-[1.75rem]">
             Welcome back, {firstName}
           </h1>
           <p className="mt-1.5 text-sm text-text-secondary">
-            Personal workspace · Your money. Your rules. ·{" "}
-            {formatShortDate("2026-11-26")}
+            Personal workspace · Your money. Your rules.
           </p>
         </div>
-        <Link href="/app/expenses/new">
-          <Button>
-            <Plus size={16} />
-            Add expense
-          </Button>
-        </Link>
+        <Button href="/app/expenses/new">
+          <Plus size={16} />
+          Add expense
+        </Button>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -90,7 +84,7 @@ export default function DashboardPage() {
             <StatCard
               label="Next 7 days"
               value={formatKES(stats.next7)}
-              hint="Due 26 Nov – 3 Dec"
+              hint="Due in the next week"
               icon={<CalendarClock size={18} strokeWidth={1.75} />}
             />
             <StatCard
@@ -134,33 +128,45 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {upcoming.map((e) => (
-                    <tr
-                      key={e.id}
-                      className="border-b border-border/60 last:border-0 transition-colors hover:bg-bg-raised/35"
-                    >
-                      <td className="px-5 py-3.5">
-                        <Link
-                          href={`/app/subscriptions/${e.id}`}
-                          className="font-medium text-text-primary hover:text-brand"
-                        >
-                          {e.name}
-                        </Link>
-                        <p className="mt-0.5 text-xs text-text-secondary">
-                          {e.paymentMethod}
-                        </p>
-                      </td>
-                      <td className="px-3 py-3.5 tabular text-text-secondary">
-                        {formatShortDate(e.nextBillingDate)}
-                      </td>
-                      <td className="px-3 py-3.5">
-                        <StatusBadge status={e.status} />
-                      </td>
-                      <td className="money px-5 py-3.5 text-right text-[15px] font-semibold tracking-tight">
-                        {formatKES(e.amount)}
+                  {upcoming.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-5 py-10 text-center text-sm text-text-secondary">
+                        No upcoming payments.{" "}
+                        <Link href="/app/expenses/new" className="text-brand hover:underline">
+                          Add an expense
+                        </Link>{" "}
+                        to get started.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    upcoming.map((e) => (
+                      <tr
+                        key={e.id}
+                        className="border-b border-border/60 last:border-0 transition-colors hover:bg-bg-raised/35"
+                      >
+                        <td className="px-5 py-3.5">
+                          <Link
+                            href={`/app/subscriptions/${e.id}`}
+                            className="font-medium text-text-primary hover:text-brand"
+                          >
+                            {e.name}
+                          </Link>
+                          <p className="mt-0.5 text-xs text-text-secondary">
+                            {e.paymentMethod}
+                          </p>
+                        </td>
+                        <td className="px-3 py-3.5 tabular text-text-secondary">
+                          {formatShortDate(e.nextBillingDate)}
+                        </td>
+                        <td className="px-3 py-3.5">
+                          <StatusBadge status={e.status} />
+                        </td>
+                        <td className="money px-5 py-3.5 text-right text-[15px] font-semibold tracking-tight">
+                          {formatKES(e.amount)}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -180,36 +186,42 @@ export default function DashboardPage() {
             </Link>
           </div>
           <ul className="divide-y divide-border">
-            {attention.map((a) => (
-              <li key={a.id} className="px-5 py-4">
-                <div className="flex items-start gap-2.5">
-                  {a.severity === "danger" ? (
-                    <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand" />
-                  ) : a.severity === "warning" ? (
-                    <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-warning" />
-                  ) : (
-                    <Info size={14} className="mt-0.5 shrink-0 text-text-secondary" />
-                  )}
-                  <div>
-                    <p
-                      className={cn(
-                        "text-sm font-medium leading-snug",
-                        a.severity === "danger"
-                          ? "text-brand"
-                          : a.severity === "warning"
-                            ? "text-warning"
-                            : "text-text-primary",
-                      )}
-                    >
-                      {a.title}
-                    </p>
-                    <p className="mt-1 text-xs leading-relaxed text-text-secondary">
-                      {a.detail}
-                    </p>
-                  </div>
-                </div>
+            {attention.length === 0 ? (
+              <li className="px-5 py-8 text-center text-sm text-text-secondary">
+                All clear — no open alerts.
               </li>
-            ))}
+            ) : (
+              attention.map((a) => (
+                <li key={a.id} className="px-5 py-4">
+                  <div className="flex items-start gap-2.5">
+                    {a.severity === "danger" ? (
+                      <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand" />
+                    ) : a.severity === "warning" ? (
+                      <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-warning" />
+                    ) : (
+                      <Info size={14} className="mt-0.5 shrink-0 text-text-secondary" />
+                    )}
+                    <div>
+                      <p
+                        className={cn(
+                          "text-sm font-medium leading-snug",
+                          a.severity === "danger"
+                            ? "text-brand"
+                            : a.severity === "warning"
+                              ? "text-warning"
+                              : "text-text-primary",
+                        )}
+                      >
+                        {a.title}
+                      </p>
+                      <p className="mt-1 text-xs leading-relaxed text-text-secondary">
+                        {a.detail}
+                      </p>
+                    </div>
+                  </div>
+                </li>
+              ))
+            )}
           </ul>
         </section>
       </div>
@@ -220,20 +232,26 @@ export default function DashboardPage() {
             <h2 className="text-[15px] font-semibold tracking-tight">Recent activity</h2>
           </div>
           <ul className="divide-y divide-border">
-            {activity.slice(0, 5).map((a) => (
-              <li
-                key={a.id}
-                className="flex items-start justify-between gap-4 px-5 py-3.5"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">{a.title}</p>
-                  <p className="mt-0.5 text-xs text-text-secondary">{a.detail}</p>
-                </div>
-                <time className="shrink-0 tabular text-xs text-text-secondary">
-                  {formatShortDate(a.at)}
-                </time>
+            {activity.length === 0 ? (
+              <li className="px-5 py-8 text-center text-sm text-text-secondary">
+                Activity will appear as you add and edit expenses.
               </li>
-            ))}
+            ) : (
+              activity.slice(0, 5).map((a) => (
+                <li
+                  key={a.id}
+                  className="flex items-start justify-between gap-4 px-5 py-3.5"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">{a.title}</p>
+                    <p className="mt-0.5 text-xs text-text-secondary">{a.detail}</p>
+                  </div>
+                  <time className="shrink-0 tabular text-xs text-text-secondary">
+                    {formatShortDate(a.at)}
+                  </time>
+                </li>
+              ))
+            )}
           </ul>
         </section>
 

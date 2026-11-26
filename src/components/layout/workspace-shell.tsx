@@ -182,7 +182,7 @@ export function WorkspaceShell({
             {WORKSPACE_META[workspace].label} · {user?.currency || "KES"}
           </p>
           <p className="text-[11px] text-text-secondary/80">
-            Sample data — illustrative only
+            Your data · local until Supabase
           </p>
           <button
             type="button"

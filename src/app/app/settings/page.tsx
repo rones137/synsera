@@ -67,7 +67,7 @@ function BlacklistPanel() {
 }
 
 export default function SettingsPage() {
-  const { user, updateProfile, logout, deleteAccount, expenses, resetDemoData } =
+  const { user, updateProfile, logout, deleteAccount, expenses, clearWorkspaceData } =
     useApp();
   const { setTheme } = useTheme();
   const router = useRouter();
@@ -218,8 +218,8 @@ export default function SettingsPage() {
           <Button variant="secondary" onClick={exportData}>
             Export JSON
           </Button>
-          <Button variant="secondary" onClick={resetDemoData}>
-            Reset demo data
+          <Button variant="secondary" onClick={clearWorkspaceData}>
+            Clear expenses & alerts
           </Button>
           <Button
             variant="ghost"

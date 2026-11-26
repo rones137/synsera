@@ -16,8 +16,8 @@ export default function Page() {
             <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Synsera Personal</h1>
             <p className="mt-4 text-lg text-text-secondary">Household recurring-expense control — detect, track, warn, forecast, and manage renewals across cards and M-PESA.</p>
             <div className="mt-8 flex justify-center gap-3">
-              <Link href="/register"><Button size="lg">Get started</Button></Link>
-              <Link href="/app"><Button size="lg" variant="secondary">Open demo</Button></Link>
+              <Button href="/register" size="lg">Get started</Button>
+              <Button href="/app" size="lg" variant="secondary">Open demo</Button>
             </div>
           </div>
         </section>

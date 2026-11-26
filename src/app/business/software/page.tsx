@@ -21,11 +21,7 @@ export default function SoftwarePage() {
         title="Software"
         description="SaaS tools for your company — live from workspace expenses."
         action={
-          <Link href="/business/expenses">
-            <Button size="sm" variant="secondary">
-              All expenses
-            </Button>
-          </Link>
+          <Button href="/business/expenses" size="sm" variant="secondary">All expenses</Button>
         }
       />
       <SimpleTable headers={["Name", "Category", "Status", "Amount"]}>

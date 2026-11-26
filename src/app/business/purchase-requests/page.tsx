@@ -15,7 +15,7 @@ export default function PurchaseRequestsPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <PageHeader title="Purchase requests" description="Submit requests — approve from Approvals inbox."
-        action={<Link href="/business/approvals"><Button size="sm">Open approvals</Button></Link>} />
+        action={<Button href="/business/approvals" size="sm">Open approvals</Button>} />
       <form className="flex flex-wrap gap-3 rounded-xl border border-border bg-bg-surface p-4" onSubmit={e=>{e.preventDefault(); addPurchase(title, amount, "You"); setTitle("");}}>
         <div><Label>Title</Label><Input value={title} onChange={e=>setTitle(e.target.value)} required /></div>
         <div><Label>Amount</Label><Input type="number" className="money" value={amount} onChange={e=>setAmount(Number(e.target.value))} /></div>
