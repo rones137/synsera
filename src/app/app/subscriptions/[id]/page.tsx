@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle2, Circle } from "lucide-react";
@@ -22,6 +22,62 @@ const TABS = [
 ] as const;
 
 type CancelStep = "idle" | "requested" | "merchant_contacted" | "verified";
+
+function UsageDiary({ expenseId }: { expenseId: string }) {
+  const key = `synsera-usage-${expenseId}`;
+  const [entries, setEntries] = useState<{ at: string; note: string }[]>([]);
+  const [note, setNote] = useState("");
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(key);
+      queueMicrotask(() => setEntries(raw ? JSON.parse(raw) : []));
+    } catch {
+      /* ignore */
+    }
+  }, [key]);
+
+  return (
+    <div className="rounded-xl border border-border bg-bg-app p-4 space-y-3">
+      <h3 className="text-sm font-semibold">Usage diary</h3>
+      <p className="text-xs text-text-secondary">
+        Log whether you actually used this — feeds cancel decisions later.
+      </p>
+      <ul className="space-y-2">
+        {entries.length === 0 && (
+          <li className="text-xs text-text-secondary">No entries yet.</li>
+        )}
+        {entries.map((e, i) => (
+          <li key={i} className="text-sm border-b border-border/60 pb-2">
+            <span className="text-xs text-text-secondary">{e.at.slice(0, 10)}</span>
+            <p>{e.note}</p>
+          </li>
+        ))}
+      </ul>
+      <form
+        className="flex flex-wrap gap-2"
+        onSubmit={(ev) => {
+          ev.preventDefault();
+          if (!note.trim()) return;
+          const next = [{ at: new Date().toISOString(), note: note.trim() }, ...entries];
+          setEntries(next);
+          localStorage.setItem(key, JSON.stringify(next));
+          setNote("");
+        }}
+      >
+        <input
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="e.g. Used 2× this week"
+          className="h-10 flex-1 min-w-[180px] rounded-lg border border-border bg-bg-surface px-3 text-sm"
+        />
+        <Button type="submit" size="sm">
+          Log use
+        </Button>
+      </form>
+    </div>
+  );
+}
 
 export default function SubscriptionDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -111,29 +167,56 @@ export default function SubscriptionDetailPage() {
 
       <div className="rounded-xl border border-border bg-bg-surface p-5">
         {tab === "overview" && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="text-xs text-text-secondary">Amount</p>
-              <p className="money text-2xl font-semibold">{formatKES(expense.amount)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-text-secondary">Next billing</p>
-              <p className="text-lg font-medium">{formatShortDate(expense.nextBillingDate)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-text-secondary">Cycle</p>
-              <p className="capitalize">{expense.cycle}</p>
-            </div>
-            <div>
-              <p className="text-xs text-text-secondary">Category</p>
-              <p>{expense.category}</p>
-            </div>
-            {expense.notes && (
-              <div className="sm:col-span-2">
-                <p className="text-xs text-text-secondary">Notes</p>
-                <p className="text-sm">{expense.notes}</p>
+          <div className="space-y-5">
+            {expense.status === "failed" && (
+              <div className="rounded-xl border border-brand bg-red-tint p-4 text-sm">
+                <p className="font-medium text-brand">Failed payment help</p>
+                <p className="mt-1 text-text-secondary leading-relaxed">
+                  Card or M-PESA declined. Update the payment method with the merchant, then mark
+                  the expense active once charged successfully. Synsera never stores raw cards or
+                  PINs.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button size="sm" onClick={() => setTab("cancellation")}>
+                    Consider cancelling
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      /* keep local — user edits via edit page */
+                    }}
+                  >
+                    Review method: {expense.paymentMethod}
+                  </Button>
+                </div>
               </div>
             )}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="text-xs text-text-secondary">Amount</p>
+                <p className="money text-2xl font-semibold">{formatKES(expense.amount)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-text-secondary">Next billing</p>
+                <p className="text-lg font-medium">{formatShortDate(expense.nextBillingDate)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-text-secondary">Cycle</p>
+                <p className="capitalize">{expense.cycle}</p>
+              </div>
+              <div>
+                <p className="text-xs text-text-secondary">Category</p>
+                <p>{expense.category}</p>
+              </div>
+              {expense.notes && (
+                <div className="sm:col-span-2">
+                  <p className="text-xs text-text-secondary">Notes</p>
+                  <p className="text-sm">{expense.notes}</p>
+                </div>
+              )}
+            </div>
+            <UsageDiary expenseId={expense.id} />
           </div>
         )}
 

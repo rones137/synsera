@@ -54,6 +54,8 @@ type State = {
   webhooks: WebhookEndpoint[];
   familyMembers: { id: string; name: string; role: string }[];
   graveyard: { id: string; name: string; amount: number; cancelledAt: string }[];
+  blacklist: { id: string; merchant: string; reason: string }[];
+  fxWatch: { pair: string; rate: number; note: string }[];
   emergencyMode: boolean;
   healthScore: number;
 };
@@ -74,6 +76,8 @@ type Ctx = State & {
   inviteFamily: (name: string) => void;
   removeFamily: (id: string) => void;
   addToGraveyard: (name: string, amount: number) => void;
+  addBlacklist: (merchant: string, reason: string) => void;
+  removeBlacklist: (id: string) => void;
   setEmergencyMode: (on: boolean) => void;
   recomputeHealth: (score: number) => void;
 };
@@ -99,6 +103,13 @@ const defaults = (): State => ({
   ],
   graveyard: [
     { id: "g1", name: "Old VPN sub", amount: 800, cancelledAt: "2026-09-01" },
+  ],
+  blacklist: [
+    { id: "bl1", merchant: "LootBox Games", reason: "Impulse spend" },
+  ],
+  fxWatch: [
+    { pair: "USD/KES", rate: 129.4, note: "Illustrative mid · watch SaaS invoices" },
+    { pair: "EUR/KES", rate: 140.1, note: "Illustrative mid" },
   ],
   emergencyMode: false,
   healthScore: 72,
@@ -328,6 +339,23 @@ export function WorkspaceDataProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const addBlacklist = useCallback((merchant: string, reason: string) => {
+    setState((s) => ({
+      ...s,
+      blacklist: [
+        { id: `bl-${Date.now()}`, merchant, reason },
+        ...s.blacklist,
+      ],
+    }));
+  }, []);
+
+  const removeBlacklist = useCallback((id: string) => {
+    setState((s) => ({
+      ...s,
+      blacklist: s.blacklist.filter((b) => b.id !== id),
+    }));
+  }, []);
+
   const setEmergencyMode = useCallback((on: boolean) => {
     setState((s) => ({ ...s, emergencyMode: on }));
   }, []);
@@ -354,6 +382,8 @@ export function WorkspaceDataProvider({ children }: { children: ReactNode }) {
       inviteFamily,
       removeFamily,
       addToGraveyard,
+      addBlacklist,
+      removeBlacklist,
       setEmergencyMode,
       recomputeHealth,
     }),
@@ -374,6 +404,8 @@ export function WorkspaceDataProvider({ children }: { children: ReactNode }) {
       inviteFamily,
       removeFamily,
       addToGraveyard,
+      addBlacklist,
+      removeBlacklist,
       setEmergencyMode,
       recomputeHealth,
     ],

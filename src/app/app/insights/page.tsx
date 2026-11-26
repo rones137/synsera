@@ -9,7 +9,7 @@ import { useEffect } from "react";
 
 export default function InsightsPage() {
   const { expenses } = useApp();
-  const { healthScore, recomputeHealth, emergencyMode } = useWorkspaceData();
+  const { healthScore, recomputeHealth, emergencyMode, fxWatch } = useWorkspaceData();
   const personal = expenses.filter(e => e.workspace==="personal" && !["cancelled","archived"].includes(e.status));
   const stats = getDashboardStats(personal);
   const failed = personal.filter(e=>e.status==="failed").length;
@@ -46,6 +46,23 @@ export default function InsightsPage() {
             <li key={e.id} className="flex justify-between text-sm border-b border-border/60 pb-3 last:border-0">
               <span>{e.name}</span>
               <span className="money font-semibold">{formatKES(monthlyEquivalent(e))}/mo</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <section className="rounded-xl border border-border bg-bg-surface p-5">
+        <h2 className="font-semibold mb-2">Currency watch</h2>
+        <p className="text-xs text-text-secondary mb-4">
+          Illustrative mid rates — useful when SaaS invoices land in foreign currency.
+        </p>
+        <ul className="space-y-3">
+          {fxWatch.map((fx) => (
+            <li key={fx.pair} className="flex justify-between text-sm border-b border-border/60 pb-3 last:border-0">
+              <span>
+                {fx.pair}
+                <span className="block text-xs text-text-secondary">{fx.note}</span>
+              </span>
+              <span className="money font-semibold">{fx.rate.toFixed(2)}</span>
             </li>
           ))}
         </ul>

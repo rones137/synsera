@@ -6,8 +6,65 @@ import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { useApp } from "@/lib/store";
+import { useWorkspaceData } from "@/lib/workspace-store";
 import { useTheme, type ThemeMode } from "@/components/theme/theme-provider";
 import type { ThemeMode as ProfileTheme } from "@/lib/types";
+
+function BlacklistPanel() {
+  const { blacklist, addBlacklist, removeBlacklist } = useWorkspaceData();
+  const [merchant, setMerchant] = useState("");
+  const [reason, setReason] = useState("");
+  return (
+    <div className="rounded-xl border border-border bg-bg-surface p-5 space-y-4">
+      <h2 className="font-semibold">Merchant blacklist</h2>
+      <p className="text-sm text-text-secondary">
+        Flag merchants you do not want to resubscribe to. Local demo only.
+      </p>
+      <ul className="space-y-2">
+        {blacklist.map((b) => (
+          <li
+            key={b.id}
+            className="flex items-center justify-between gap-3 text-sm border-b border-border/60 pb-2"
+          >
+            <span>
+              <span className="font-medium">{b.merchant}</span>
+              <span className="text-text-secondary"> · {b.reason}</span>
+            </span>
+            <Button size="sm" variant="ghost" onClick={() => removeBlacklist(b.id)}>
+              Remove
+            </Button>
+          </li>
+        ))}
+      </ul>
+      <form
+        className="flex flex-wrap gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!merchant.trim()) return;
+          addBlacklist(merchant.trim(), reason.trim() || "Blacklisted");
+          setMerchant("");
+          setReason("");
+        }}
+      >
+        <Input
+          value={merchant}
+          onChange={(e) => setMerchant(e.target.value)}
+          placeholder="Merchant"
+          className="max-w-[160px]"
+        />
+        <Input
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="Reason"
+          className="max-w-[180px]"
+        />
+        <Button type="submit" size="sm">
+          Add
+        </Button>
+      </form>
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const { user, updateProfile, logout, deleteAccount, expenses, resetDemoData } =
@@ -152,6 +209,8 @@ export default function SettingsPage() {
 
         <Button type="submit">{saved ? "Saved" : "Save settings"}</Button>
       </form>
+
+      <BlacklistPanel />
 
       <div className="rounded-xl border border-border bg-bg-surface p-5 space-y-3">
         <h2 className="font-semibold">Data</h2>
