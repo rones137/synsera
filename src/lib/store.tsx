@@ -100,28 +100,47 @@ function stamp() {
   return new Date().toISOString();
 }
 
+function initialState(): Persisted {
+  const existing = load();
+  if (existing) {
+    return {
+      user: existing.user,
+      workspace: existing.workspace || "personal",
+      expenses: existing.expenses?.length ? existing.expenses : DEMO_EXPENSES,
+      alerts: existing.alerts?.length ? existing.alerts : DEMO_ALERTS,
+      activity: existing.activity?.length ? existing.activity : DEMO_ACTIVITY,
+      hydratedDemo: true,
+    };
+  }
+  return {
+    user: null,
+    workspace: "personal",
+    expenses: DEMO_EXPENSES,
+    alerts: DEMO_ALERTS,
+    activity: DEMO_ACTIVITY,
+    hydratedDemo: true,
+  };
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [workspace, setWorkspaceState] = useState<WorkspaceKind>("personal");
-  const [expenses, setExpenses] = useState<RecurringExpense[]>([]);
-  const [alerts, setAlerts] = useState<AlertItem[]>([]);
-  const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const [expenses, setExpenses] = useState<RecurringExpense[]>(DEMO_EXPENSES);
+  const [alerts, setAlerts] = useState<AlertItem[]>(DEMO_ALERTS);
+  const [activity, setActivity] = useState<ActivityItem[]>(DEMO_ACTIVITY);
 
   useEffect(() => {
-    const existing = load();
-    if (existing) {
+    const existing = initialState();
+    // Hydrate from localStorage after mount (SSR-safe)
+    queueMicrotask(() => {
       setUser(existing.user);
-      setWorkspaceState(existing.workspace || "personal");
-      setExpenses(existing.expenses?.length ? existing.expenses : DEMO_EXPENSES);
-      setAlerts(existing.alerts?.length ? existing.alerts : DEMO_ALERTS);
-      setActivity(existing.activity?.length ? existing.activity : DEMO_ACTIVITY);
-    } else {
-      setExpenses(DEMO_EXPENSES);
-      setAlerts(DEMO_ALERTS);
-      setActivity(DEMO_ACTIVITY);
-    }
-    setReady(true);
+      setWorkspaceState(existing.workspace);
+      setExpenses(existing.expenses);
+      setAlerts(existing.alerts);
+      setActivity(existing.activity);
+      setReady(true);
+    });
   }, []);
 
   useEffect(() => {

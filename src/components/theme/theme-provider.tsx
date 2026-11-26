@@ -37,10 +37,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const stored = localStorage.getItem("synsera-theme") as ThemeMode | null;
     const initial = stored ?? "dark";
-    setThemeState(initial);
     const r = initial === "system" ? getSystemTheme() : initial;
-    setResolved(r);
-    applyTheme(r);
+    queueMicrotask(() => {
+      setThemeState(initial);
+      setResolved(r);
+      applyTheme(r);
+    });
   }, []);
 
   useEffect(() => {
