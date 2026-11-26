@@ -42,7 +42,9 @@ export function SynseraLogo({
     >
       <SynseraMark />
       {!compact && (
-        <span className="text-lg font-semibold tracking-tight">Synsera</span>
+        <span className="text-[17px] font-semibold tracking-[-0.03em]">
+          Synsera
+        </span>
       )}
     </Link>
   );
