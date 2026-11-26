@@ -7,7 +7,7 @@ export function googleOAuthReady(): boolean {
 }
 
 export function googleSetupHint(): string {
-  return "Connect Google via Supabase: set NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_ANON_KEY, enable Google provider with GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET in the Supabase dashboard, and add your redirect URL.";
+  return "Real Google sign-in needs NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_ANON_KEY on this host, plus Client ID/Secret in Supabase → Authentication → Providers → Google (secret never in Next.js). See docs/google-oauth-setup.md.";
 }
 
 /** Starts Supabase Google OAuth when configured. Returns false if not configured. */

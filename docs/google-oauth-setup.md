@@ -1,114 +1,123 @@
 # Synsera — Connect Google Client ID (step-by-step)
 
-Current temporary deploy (expires ~1h unless claimed):  
+Current temporary deploy:  
 **https://zippy-magenta-hi6yzt6.tmp.now**
 
-App callback path (Synsera code): `/auth/callback`  
-Supabase callback path (paste into Google): `/auth/v1/callback`
+| Role | Path |
+|---|---|
+| Synsera app callback | `/auth/callback` |
+| Google → Supabase redirect (only URI for Google Console) | `/auth/v1/callback` |
 
 ---
 
-## A. Google Cloud Console — create OAuth client
+## Blaise’s Google OAuth Web client (public)
 
-1. Open [Google Cloud Console](https://console.cloud.google.com/) → select or create a project (e.g. `Synsera`).
-2. **APIs & Services → OAuth consent screen**
-   - User type: **External** (unless you have a Workspace org).
-   - App name: **Synsera**
-   - User support email: yours
-   - Developer contact: yours
-   - Save. Add yourself as a **Test user** while the app is in Testing.
-3. **APIs & Services → Credentials → Create credentials → OAuth client ID**
-   - Application type: **Web application**
-   - Name: `Synsera Web`
-4. **Authorized JavaScript origins** (add each host you use):
-   - `http://localhost:3000`
-   - `https://zippy-magenta-hi6yzt6.tmp.now` ← current temp deploy
-   - Your lasting production host once claimed/custom domain (e.g. `https://synsera.vercel.app`)
-5. **Authorized redirect URIs** — add **only** the Supabase Auth callback (not the Next.js URL):
-   ```
-   https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback
-   ```
-   Find `YOUR_PROJECT_REF` in Supabase → Project Settings → API → Project URL  
-   (e..g. `https://abcdefgh.supabase.co` → redirect = `https://abcdefgh.supabase.co/auth/v1/callback`).
-6. Create → copy **Client ID** and **Client Secret**.
+**Client ID** (safe to keep in docs / frontend config):
+
+```
+707769106160-qmmbn0gf0tes9nk44a18quq7gucublgu.apps.googleusercontent.com
+```
+
+**Client Secret:** paste **only** in Supabase → Authentication → Providers → Google.  
+Never put the secret in the Synsera repo, `.env`, Vercel env, chat logs, or commits.  
+After Google sign-in works once, **rotate the Client Secret** in Google Cloud Console and update the new value in Supabase only.
 
 ---
 
-## B. Paste Client ID / Secret in Supabase (not in Next.js)
+## Consent screen — Test users (required while Testing)
 
-1. Supabase Dashboard → your project → **Authentication → Providers → Google**.
-2. Enable Google.
-3. Paste:
-   - **Client ID** = Google Client ID
-   - **Client Secret** = Google Client Secret
-4. Save.
+While the OAuth consent screen is in **Testing**, only listed emails can sign in:
 
-Google’s secret stays in Supabase. Synsera’s browser client never needs `GOOGLE_CLIENT_SECRET`.
+1. Google Cloud Console → **APIs & Services → OAuth consent screen**
+2. Under **Test users** → **Add users**
+3. Add Blaise’s Google account (and any teammate who should try Continue with Google)
+
+Without this, Google shows “app has not completed Google verification” / access blocked for other accounts.
 
 ---
 
-## C. Supabase redirect allow-list (Synsera’s `/auth/callback`)
+## Exact redirects for `zippy-magenta-hi6yzt6.tmp.now`
 
-Supabase → **Authentication → URL Configuration**:
+### Google Cloud → Credentials → your Web client
+
+**Authorized JavaScript origins**
+
+```
+http://localhost:3000
+https://zippy-magenta-hi6yzt6.tmp.now
+```
+
+**Authorized redirect URIs** (Supabase only — replace `YOUR_PROJECT_REF`)
+
+```
+https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback
+```
+
+Do **not** add `https://zippy-magenta-hi6yzt6.tmp.now/auth/callback` here. Google talks to Supabase; Synsera receives the session afterward.
+
+### Supabase → Authentication → URL Configuration
 
 | Setting | Value |
 |---|---|
-| Site URL | `https://zippy-magenta-hi6yzt6.tmp.now` (or localhost while developing) |
-| Redirect URLs | one per line / entry: |
+| Site URL | `https://zippy-magenta-hi6yzt6.tmp.now` |
+| Redirect URLs | see below |
 
 ```
 http://localhost:3000/auth/callback
 https://zippy-magenta-hi6yzt6.tmp.now/auth/callback
 ```
 
-When you claim the Vercel deploy or move to a stable domain, add that host’s `/auth/callback` too and update Site URL.
+---
+
+## Paste Client ID + Secret in Supabase
+
+1. Supabase → **Authentication → Providers → Google** → Enable
+2. **Client ID** = `707769106160-qmmbn0gf0tes9nk44a18quq7gucublgu.apps.googleusercontent.com`
+3. **Client Secret** = the value from Google (dashboard only — never in git)
+4. Save → then rotate the Google secret after first successful login
+
+Synsera never reads `GOOGLE_CLIENT_SECRET`. The login button calls `supabase.auth.signInWithOAuth({ provider: "google" })` when env vars below are set.
 
 ---
 
-## D. Env vars for Synsera (Next.js)
+## Env vars still needed (blocked until Blaise sends them)
 
-Create `.env.local` (local) and the same names in Vercel / Cursor app secrets for the hosted app:
+Synsera switches **Continue with Google** from local demo → real Supabase OAuth when both exist:
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...your_anon_public_key...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...anon_public_key...
 ```
 
-Copy both from Supabase → **Project Settings → API**:
-- Project URL → `NEXT_PUBLIC_SUPABASE_URL`
-- `anon` `public` key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+From Supabase → **Project Settings → API**.  
+Set in `.env.local` for local, and on the host (Vercel project env / fresh deploy) for zippy-magenta. Then rebuild/redeploy.
 
-Redeploy after setting secrets (temp Vercel deploys need a fresh `vercel deploy` with env, or claim + project env).
+Without them, the button still works as a **local demo** session (no Google).
 
-Without these two vars, **Continue with Google** falls back to a local demo session (no real Google).
-
----
-
-## E. Apply schema (once)
-
-In Supabase → **SQL Editor**, run the full file `supabase/schema.sql` from the repo, then confirm tables exist (`profiles`, `expenses`, etc.).
+Also run `supabase/schema.sql` once in the SQL Editor.
 
 ---
 
-## F. Verify “Continue with Google”
+## Verify
 
-1. Open https://zippy-magenta-hi6yzt6.tmp.now/login (or localhost:3000/login).
-2. Click **Continue with Google**.
-3. Expect: Google account picker → redirect through `….supabase.co/auth/v1/callback` → land on Synsera `/auth/callback` → then `/app` or `/onboarding`.
-4. Failures to check:
-   - `redirect_uri_mismatch` → Google redirect URI must be exactly `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`.
-   - Stuck on Synsera with demo session → `NEXT_PUBLIC_SUPABASE_*` missing on that host.
-   - Supabase “redirect not allowed” → add `https://<host>/auth/callback` under URL Configuration.
+1. Test user email added on the consent screen  
+2. Client ID + Secret saved in Supabase Google provider  
+3. Redirects above match  
+4. `NEXT_PUBLIC_SUPABASE_*` set + redeployed  
+5. Open https://zippy-magenta-hi6yzt6.tmp.now/login → **Continue with Google**  
+6. Expect: Google picker → `….supabase.co/auth/v1/callback` → Synsera `/auth/callback` → `/app` or `/onboarding`  
+7. Rotate Client Secret in Google → update Supabase → discard any secret that was pasted in chat
 
 ---
 
 ## Quick checklist
 
-- [ ] Google OAuth Web client created  
-- [ ] Google redirect URI = Supabase `/auth/v1/callback` only  
-- [ ] JS origins include localhost + Vercel URL  
-- [ ] Client ID + Secret in Supabase Google provider  
-- [ ] Supabase Redirect URLs include `/auth/callback` for each Synsera host  
-- [ ] `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` set + redeployed  
+- [x] Google OAuth Web client created (Client ID above)  
+- [ ] Client Secret in Supabase Google provider only (then rotate)  
+- [ ] Consent screen **Test users** includes Blaise  
+- [ ] Google redirect = `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`  
+- [ ] JS origins include zippy-magenta + localhost  
+- [ ] Supabase Redirect URLs include `https://zippy-magenta-hi6yzt6.tmp.now/auth/callback`  
+- [ ] Waiting: `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`  
 - [ ] `schema.sql` applied  
-- [ ] Continue with Google reaches `/app` or `/onboarding`
+- [ ] Continue with Google verified on zippy-magenta
