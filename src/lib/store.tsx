@@ -11,6 +11,7 @@ import {
 } from "react";
 import { DEFAULT_USER_PROFILE } from "./demo-data";
 import { APP_STORAGE_KEY, persistence } from "./persistence";
+import { getSupabaseBrowser, isSupabaseConfigured } from "./supabase/client";
 import type {
   ActivityItem,
   AlertItem,
@@ -47,19 +48,21 @@ type Persisted = {
 
 type AppContextValue = {
   ready: boolean;
+  backend: "supabase" | "local";
   user: UserProfile | null;
   workspace: WorkspaceKind;
   expenses: RecurringExpense[];
   alerts: AlertItem[];
   activity: ActivityItem[];
-  login: (email: string, password: string, name?: string) => void;
+  login: (email: string, password: string, name?: string) => Promise<void>;
   register: (input: {
     name: string;
     email: string;
     password: string;
     country: string;
-  }) => void;
-  logout: () => void;
+  }) => Promise<void>;
+  loginWithGoogleDemo: (completeOnboarding?: boolean) => void;
+  logout: () => Promise<void>;
   completeOnboarding: (partial: Partial<UserProfile>) => void;
   updateProfile: (partial: Partial<UserProfile>) => void;
   setWorkspace: (w: WorkspaceKind) => void;
@@ -129,6 +132,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [expenses, setExpenses] = useState<RecurringExpense[]>([]);
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const backend: "supabase" | "local" = isSupabaseConfigured()
+    ? "supabase"
+    : "local";
 
   useEffect(() => {
     // Drop legacy v1 demo fixtures if still present
@@ -139,6 +145,72 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setExpenses(existing.expenses);
     setAlerts(existing.alerts);
     setActivity(existing.activity);
+
+    const supabase = getSupabaseBrowser();
+    if (supabase) {
+      void supabase.auth.getSession().then(async ({ data }) => {
+        const session = data.session;
+        if (!session?.user) {
+          setReady(true);
+          return;
+        }
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", session.user.id)
+          .maybeSingle();
+        setUser({
+          ...DEFAULT_USER_PROFILE,
+          id: session.user.id,
+          email: session.user.email || "",
+          name:
+            profile?.name ||
+            session.user.user_metadata?.full_name ||
+            session.user.email ||
+            "You",
+          country: profile?.country || "KE",
+          currency: (profile?.currency as UserProfile["currency"]) || "KES",
+          timezone: profile?.timezone || "Africa/Nairobi",
+          theme: (profile?.theme as UserProfile["theme"]) || "dark",
+          onboardingComplete: profile?.onboarding_complete ?? true,
+          workspacesEnabled:
+            (profile?.workspaces_enabled as WorkspaceKind[]) || [
+              "personal",
+              "business",
+              "merchant",
+            ],
+        });
+        const { data: rows } = await supabase
+          .from("expenses")
+          .select("*")
+          .eq("user_id", session.user.id)
+          .order("created_at", { ascending: false });
+        if (rows) {
+          setExpenses(
+            rows.map((row) => ({
+              id: row.id,
+              name: row.name,
+              merchant: row.merchant,
+              amount: Number(row.amount),
+              currency: "KES" as const,
+              cycle: row.cycle,
+              nextBillingDate: row.next_billing_date,
+              category: row.category,
+              status: row.status,
+              paymentMethod: row.payment_method,
+              notes: row.notes || undefined,
+              confirmed: row.confirmed,
+              workspace: row.workspace,
+              history: row.history || [],
+              createdAt: row.created_at,
+              updatedAt: row.updated_at,
+            })),
+          );
+        }
+        setReady(true);
+      });
+      return;
+    }
     setReady(true);
   }, []);
 
@@ -154,7 +226,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }, [ready, user, workspace, expenses, alerts, activity]);
 
-  const login = useCallback((email: string, _password: string, name?: string) => {
+  const login = useCallback(async (email: string, password: string, name?: string) => {
+    const supabase = getSupabaseBrowser();
+    if (supabase) {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      const u = data.user;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", u.id)
+        .maybeSingle();
+      setUser({
+        ...DEFAULT_USER_PROFILE,
+        id: u.id,
+        email: u.email || email,
+        name: profile?.name || name || u.email || email,
+        onboardingComplete: profile?.onboarding_complete ?? true,
+        country: profile?.country || "KE",
+        workspacesEnabled:
+          (profile?.workspaces_enabled as WorkspaceKind[]) || [
+            "personal",
+            "business",
+            "merchant",
+          ],
+      });
+      return;
+    }
     setUser((prev) => {
       return {
         ...DEFAULT_USER_PROFILE,
@@ -169,8 +270,47 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const register = useCallback(
-    (input: { name: string; email: string; password: string; country: string }) => {
-      void input.password;
+    async (input: {
+      name: string;
+      email: string;
+      password: string;
+      country: string;
+    }) => {
+      const supabase = getSupabaseBrowser();
+      if (supabase) {
+        const { data, error } = await supabase.auth.signUp({
+          email: input.email,
+          password: input.password,
+          options: { data: { name: input.name, full_name: input.name } },
+        });
+        if (error) throw error;
+        if (data.user) {
+          await supabase.from("profiles").upsert({
+            id: data.user.id,
+            email: input.email,
+            name: input.name,
+            country: input.country,
+            currency: input.country === "KE" ? "KES" : "KES",
+            onboarding_complete: false,
+            workspaces_enabled: ["personal"],
+          });
+        }
+        setUser({
+          ...DEFAULT_USER_PROFILE,
+          id: data.user?.id || `user-${Date.now()}`,
+          name: input.name,
+          email: input.email,
+          country: input.country,
+          currency: "KES",
+          onboardingComplete: false,
+          workspacesEnabled: ["personal"],
+        });
+        setWorkspaceState("personal");
+        setExpenses([]);
+        setAlerts([]);
+        setActivity([]);
+        return;
+      }
       setUser({
         ...DEFAULT_USER_PROFILE,
         id: `user-${Date.now()}`,
@@ -186,7 +326,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const logout = useCallback(() => {
+  const loginWithGoogleDemo = useCallback((complete = true) => {
+    setUser({
+      ...DEFAULT_USER_PROFILE,
+      id: `google-${Date.now()}`,
+      name: "Google user",
+      email: `google.user+${Date.now()}@synsera.local`,
+      onboardingComplete: complete,
+      workspacesEnabled: complete
+        ? ["personal", "business", "merchant"]
+        : ["personal"],
+    });
+    setExpenses([]);
+    setAlerts([]);
+    setActivity([]);
+  }, []);
+
+  const logout = useCallback(async () => {
+    const supabase = getSupabaseBrowser();
+    if (supabase) await supabase.auth.signOut();
     setUser(null);
   }, []);
 
@@ -246,6 +404,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
         detail: `${item.name} · KSh ${item.amount.toLocaleString("en-KE")}/${item.cycle === "yearly" ? "yr" : "mo"}`,
         at: stamp(),
       });
+      const supabase = getSupabaseBrowser();
+      if (supabase) {
+        void supabase.auth.getUser().then(({ data }) => {
+          if (!data.user) return;
+          void supabase.from("expenses").upsert({
+            id: item.id,
+            user_id: data.user.id,
+            workspace: item.workspace,
+            name: item.name,
+            merchant: item.merchant,
+            amount: item.amount,
+            currency: item.currency,
+            cycle: item.cycle,
+            next_billing_date: item.nextBillingDate,
+            category: item.category,
+            status: item.status,
+            payment_method: item.paymentMethod,
+            notes: item.notes || null,
+            confirmed: item.confirmed,
+            history: item.history || [],
+            created_at: item.createdAt,
+            updated_at: item.updatedAt,
+          });
+        });
+      }
       return item;
     },
     [addActivity],
@@ -365,7 +548,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addActivity({
         type: "import",
         title: "CSV import completed",
-        detail: `${items.length} expenses imported (illustrative demo)`,
+        detail: `${items.length} expenses imported`,
         at: stamp(),
       });
       return items.length;
@@ -392,6 +575,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       ready,
+      backend,
       user,
       workspace,
       expenses,
@@ -399,6 +583,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       activity,
       login,
       register,
+      loginWithGoogleDemo,
       logout,
       completeOnboarding,
       updateProfile,
@@ -417,6 +602,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }),
     [
       ready,
+      backend,
       user,
       workspace,
       expenses,
@@ -424,6 +610,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       activity,
       login,
       register,
+      loginWithGoogleDemo,
       logout,
       completeOnboarding,
       updateProfile,

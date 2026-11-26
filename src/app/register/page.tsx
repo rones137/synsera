@@ -4,17 +4,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { AuthShell } from "@/components/auth/auth-shell";
+import { GoogleAuthButton } from "@/components/auth/google-button";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { useApp } from "@/lib/store";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { register } = useApp();
+  const { register, backend } = useApp();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  function onSubmit(e: FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
     const fd = new FormData(e.currentTarget);
@@ -27,11 +28,14 @@ export default function RegisterPage() {
       return;
     }
     setLoading(true);
-    register({ name, email, password, country });
-    window.setTimeout(() => {
-      setLoading(false);
+    try {
+      await register({ name, email, password, country });
       router.push("/onboarding");
-    }, 400);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Registration failed.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -47,43 +51,52 @@ export default function RegisterPage() {
         </>
       }
     >
-      <form onSubmit={onSubmit} className="space-y-4">
-        <div>
-          <Label htmlFor="name">Full name</Label>
-          <Input id="name" name="name" autoComplete="name" placeholder="Blaise Rolys" required />
+      <div className="space-y-4">
+        <GoogleAuthButton mode="register" />
+        <div className="flex items-center gap-3 text-xs text-text-secondary">
+          <span className="h-px flex-1 bg-border" />
+          or email
+          <span className="h-px flex-1 bg-border" />
         </div>
-        <div>
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" name="email" type="email" autoComplete="email" required />
-        </div>
-        <div>
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            minLength={8}
-            required
-          />
-        </div>
-        <div>
-          <Label htmlFor="country">Country / currency</Label>
-          <Select id="country" name="country" defaultValue="KE">
-            <option value="KE">Kenya · KES</option>
-            <option value="UG">Uganda · UGX</option>
-            <option value="TZ">Tanzania · TZS</option>
-            <option value="RW">Rwanda · RWF</option>
-          </Select>
-        </div>
-        {error && <p className="text-sm text-brand">{error}</p>}
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Creating…" : "Create account"}
-        </Button>
-        <p className="text-xs text-text-secondary">
-          We never ask for M-PESA PIN or bank passwords. Session stored locally for this MVP demo.
-        </p>
-      </form>
+        <form onSubmit={onSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="name">Full name</Label>
+            <Input id="name" name="name" autoComplete="name" placeholder="Your name" required />
+          </div>
+          <div>
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" name="email" type="email" autoComplete="email" required />
+          </div>
+          <div>
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              minLength={8}
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="country">Country / currency</Label>
+            <Select id="country" name="country" defaultValue="KE">
+              <option value="KE">Kenya · KES</option>
+              <option value="UG">Uganda · UGX</option>
+              <option value="TZ">Tanzania · TZS</option>
+              <option value="RW">Rwanda · RWF</option>
+            </Select>
+          </div>
+          {error && <p className="text-sm text-brand">{error}</p>}
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Creating…" : "Create account"}
+          </Button>
+          <p className="text-xs text-text-secondary">
+            We never ask for M-PESA PIN or bank passwords. Backend:{" "}
+            {backend === "supabase" ? "Supabase Auth" : "local until Supabase env is set"}.
+          </p>
+        </form>
+      </div>
     </AuthShell>
   );
 }

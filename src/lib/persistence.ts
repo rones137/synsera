@@ -43,9 +43,9 @@ export function createLocalPersistence(): PersistenceDriver {
 }
 
 /**
- * Placeholder for Stage 3+. Wire with @supabase/supabase-js and map
- * get/set to tables (expenses, alerts, workspace_*). Keep the same keys
- * as JSON documents or normalize into rows.
+ * Document-key adapter for Supabase is optional; primary path is row sync
+ * via `@/lib/supabase/client` in AppProvider / WorkspaceDataProvider when
+ * NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_ANON_KEY are set.
  */
 export function createSupabasePersistence(_opts: {
   url: string;
@@ -53,12 +53,11 @@ export function createSupabasePersistence(_opts: {
   userId: string;
 }): PersistenceDriver {
   void _opts;
-  throw new Error(
-    "Supabase persistence is not configured yet. Set NEXT_PUBLIC_SUPABASE_URL + anon key and implement createSupabasePersistence.",
-  );
+  // Prefer table sync in stores; local driver remains the offline cache.
+  return createLocalPersistence();
 }
 
-/** Active driver — local until Supabase env is present and implemented. */
+/** Local cache always on; Supabase Auth + rows activate when env is set. */
 export const persistence: PersistenceDriver = createLocalPersistence();
 
 /** Bump when schema shape changes so stale demo fixtures are discarded. */
