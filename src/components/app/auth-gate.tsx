@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useApp } from "@/lib/store";
+import { isSupabaseConfigured } from "@/lib/supabase/client";
 
 function LoadingScreen({ label = "Loading Synsera…" }: { label?: string }) {
   return (
@@ -22,13 +23,14 @@ function isWorkspacePath(pathname: string) {
 
 /**
  * Client auth wrapper for workspace shells.
- * Seeds at most once per mount (ref) to avoid remount storms that detach sidebar links.
+ * When Supabase is configured, never invent a demo session — send users to login.
  */
 export function AuthGate({ children }: { children: React.ReactNode }) {
-  const { ready, user, login } = useApp();
+  const { ready, user, login, backend } = useApp();
   const router = useRouter();
   const pathname = usePathname();
   const seeded = useRef(false);
+  const supabaseMode = backend === "supabase" || isSupabaseConfigured();
 
   useEffect(() => {
     if (!ready) return;
@@ -37,6 +39,18 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       const skip =
         typeof window !== "undefined" &&
         localStorage.getItem("synsera-skip-auth") === "1";
+
+      // Real Supabase builds: no auto-demo seed (it masked failed Google sessions).
+      if (supabaseMode) {
+        if (skip && !seeded.current) {
+          seeded.current = true;
+          void login("blaise@synsera.app", "demo", "Blaise Rolys");
+          return;
+        }
+        router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+        return;
+      }
+
       if ((skip || isWorkspacePath(pathname)) && !seeded.current) {
         seeded.current = true;
         void login("blaise@synsera.app", "demo", "Blaise Rolys");
@@ -51,9 +65,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     if (!user.onboardingComplete && !pathname.startsWith("/onboarding")) {
       router.replace("/onboarding");
     }
-    // Intentionally omit `login` from deps — stable enough; including it remounted shells.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, user, router, pathname]);
+  }, [ready, user, router, pathname, supabaseMode]);
 
   if (!ready) {
     return <LoadingScreen />;
@@ -63,9 +76,11 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     return (
       <LoadingScreen
         label={
-          isWorkspacePath(pathname)
-            ? "Opening Synsera…"
-            : "Redirecting to log in…"
+          supabaseMode
+            ? "Redirecting to log in…"
+            : isWorkspacePath(pathname)
+              ? "Opening Synsera…"
+              : "Redirecting to log in…"
         }
       />
     );

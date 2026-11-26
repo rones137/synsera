@@ -1,9 +1,9 @@
 # Synsera — Connect Google Client ID (step-by-step)
 
-Current temporary deploy (Supabase env baked in):  
-**https://fleet-xenon-2wg8531.tmp.now**
-
+Latest deploy URL is updated when we redeploy — check the agent reply for the exact host.  
 Supabase project: `https://btwtdelbyzbfhaeqylhc.supabase.co`
+
+If you still see “Demo Google sign-in (local)”, you are on an **old host** without `NEXT_PUBLIC_SUPABASE_*` baked in. Use only the latest URL from the agent.
 
 | Role | Path |
 |---|---|

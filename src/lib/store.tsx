@@ -9,9 +9,14 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import type { User as AuthUser } from "@supabase/supabase-js";
 import { DEFAULT_USER_PROFILE } from "./demo-data";
 import { APP_STORAGE_KEY, persistence } from "./persistence";
 import { getSupabaseBrowser, isSupabaseConfigured } from "./supabase/client";
+import {
+  ensureProfileRow,
+  userProfileFromSupabase,
+} from "./supabase/profile";
 import type {
   ActivityItem,
   AlertItem,
@@ -140,78 +145,89 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Drop legacy v1 demo fixtures if still present
     persistence.removeItem("synsera-app-v1");
     const existing = initialState();
-    setUser(existing.user);
+    // Prefer live Supabase session over any stale local user when configured
+    if (!isSupabaseConfigured()) {
+      setUser(existing.user);
+    }
     setWorkspaceState(existing.workspace);
     setExpenses(existing.expenses);
     setAlerts(existing.alerts);
     setActivity(existing.activity);
 
     const supabase = getSupabaseBrowser();
-    if (supabase) {
-      void supabase.auth.getSession().then(async ({ data }) => {
-        const session = data.session;
-        if (!session?.user) {
-          setReady(true);
-          return;
-        }
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .maybeSingle();
-        setUser({
-          ...DEFAULT_USER_PROFILE,
-          id: session.user.id,
-          email: session.user.email || "",
-          name:
-            profile?.name ||
-            session.user.user_metadata?.full_name ||
-            session.user.email ||
-            "You",
-          country: profile?.country || "KE",
-          currency: (profile?.currency as UserProfile["currency"]) || "KES",
-          timezone: profile?.timezone || "Africa/Nairobi",
-          theme: (profile?.theme as UserProfile["theme"]) || "dark",
-          onboardingComplete: profile?.onboarding_complete ?? true,
-          workspacesEnabled:
-            (profile?.workspaces_enabled as WorkspaceKind[]) || [
-              "personal",
-              "business",
-              "merchant",
-            ],
-        });
-        const { data: rows } = await supabase
-          .from("expenses")
-          .select("*")
-          .eq("user_id", session.user.id)
-          .order("created_at", { ascending: false });
-        if (rows) {
-          setExpenses(
-            rows.map((row) => ({
-              id: row.id,
-              name: row.name,
-              merchant: row.merchant,
-              amount: Number(row.amount),
-              currency: "KES" as const,
-              cycle: row.cycle,
-              nextBillingDate: row.next_billing_date,
-              category: row.category,
-              status: row.status,
-              paymentMethod: row.payment_method,
-              notes: row.notes || undefined,
-              confirmed: row.confirmed,
-              workspace: row.workspace,
-              history: row.history || [],
-              createdAt: row.created_at,
-              updatedAt: row.updated_at,
-            })),
-          );
-        }
-        setReady(true);
-      });
+    if (!supabase) {
+      setReady(true);
       return;
     }
-    setReady(true);
+
+    let cancelled = false;
+
+    const client = supabase;
+
+    async function applyAuthUser(authUser: AuthUser) {
+      const profile = await userProfileFromSupabase(client, authUser);
+      await ensureProfileRow(client, authUser, profile);
+      if (cancelled) return;
+      setUser(profile);
+      const { data: rows } = await client
+        .from("expenses")
+        .select("*")
+        .eq("user_id", authUser.id)
+        .order("created_at", { ascending: false });
+      if (cancelled) return;
+      if (rows) {
+        setExpenses(
+          rows.map((row) => ({
+            id: row.id,
+            name: row.name,
+            merchant: row.merchant,
+            amount: Number(row.amount),
+            currency: "KES" as const,
+            cycle: row.cycle,
+            nextBillingDate: row.next_billing_date,
+            category: row.category,
+            status: row.status,
+            paymentMethod: row.payment_method,
+            notes: row.notes || undefined,
+            confirmed: row.confirmed,
+            workspace: row.workspace,
+            history: row.history || [],
+            createdAt: row.created_at,
+            updatedAt: row.updated_at,
+          })),
+        );
+      }
+    }
+
+    void supabase.auth.getSession().then(async ({ data }) => {
+      try {
+        if (data.session?.user) {
+          await applyAuthUser(data.session.user);
+        } else if (!cancelled) {
+          setUser(null);
+        }
+      } finally {
+        if (!cancelled) setReady(true);
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (cancelled) return;
+      if (event === "SIGNED_OUT") {
+        setUser(null);
+        return;
+      }
+      if (session?.user && (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION")) {
+        void applyAuthUser(session.user);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {

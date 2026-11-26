@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/lib/store";
 import { googleOAuthReady, googleSetupHint, startGoogleOAuth } from "@/lib/auth/google";
-import { authMode } from "@/lib/supabase/client";
 
 export function GoogleAuthButton({
   mode,
@@ -17,23 +16,28 @@ export function GoogleAuthButton({
   const router = useRouter();
   const { loginWithGoogleDemo } = useApp();
   const [loading, setLoading] = useState(false);
-  const [hint, setHint] = useState(false);
+  const [error, setError] = useState("");
+  const [showLocalHint, setShowLocalHint] = useState(false);
   const configured = googleOAuthReady();
 
   async function onClick() {
     setLoading(true);
+    setError("");
     try {
       if (configured) {
-        const started = await startGoogleOAuth(mode === "register" ? "/onboarding" : next);
-        if (started) return;
+        const started = await startGoogleOAuth(
+          mode === "register" ? "/onboarding" : next,
+        );
+        if (started) return; // browser navigates to Google
+        setError("Could not start Google sign-in. Try again.");
+        return;
       }
-      // Local / demo path when Supabase Google is not configured
-      setHint(true);
+      // Local-only fallback when this host was built without Supabase env
+      setShowLocalHint(true);
       loginWithGoogleDemo(mode === "login");
       router.push(mode === "register" ? "/onboarding" : next);
     } catch (e) {
-      console.error(e);
-      setHint(true);
+      setError(e instanceof Error ? e.message : "Google sign-in failed.");
     } finally {
       setLoading(false);
     }
@@ -51,26 +55,24 @@ export function GoogleAuthButton({
         <GoogleGlyph />
         {loading ? "Connecting…" : "Continue with Google"}
       </Button>
-      {!configured && (
+      {configured ? null : (
         <p className="text-xs leading-relaxed text-text-secondary">
-          {authMode() === "local"
-            ? "Demo Google sign-in (local). For production: "
-            : "Google provider not enabled yet. "}
+          Local demo mode on this host (Supabase env not baked into this build).{" "}
           <button
             type="button"
             className="text-brand hover:underline"
-            onClick={() => setHint((v) => !v)}
+            onClick={() => setShowLocalHint((v) => !v)}
           >
-            connect GOOGLE_CLIENT_ID / Supabase
+            Why?
           </button>
-          .
         </p>
       )}
-      {hint && !configured && (
+      {showLocalHint && !configured && (
         <p className="rounded-lg border border-border bg-bg-raised/50 px-3 py-2 text-xs text-text-secondary">
           {googleSetupHint()}
         </p>
       )}
+      {error && <p className="text-sm text-brand">{error}</p>}
     </div>
   );
 }
