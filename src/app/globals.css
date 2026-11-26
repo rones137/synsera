@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+/* Synsera design tokens — dark (default) */
+:root,
+[data-theme="dark"] {
+  --bg-app: #101013;
+  --bg-surface: #18181d;
+  --bg-raised: #23232a;
+  --brand: #e33240;
+  --brand-hover: #f04552;
+  --text-primary: #f5f5f6;
+  --text-secondary: #92929d;
+  --border: #34343d;
+  --red-tint: #211316;
+  --success: #26b47c;
+  --warning: #e9a23b;
+  --overlay: rgba(0, 0, 0, 0.55);
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  --sidebar-width: 248px;
+  --topbar-height: 64px;
+}
+
+[data-theme="light"] {
+  --bg-app: #f5f5f6;
+  --bg-surface: #ffffff;
+  --bg-raised: #ececef;
+  --brand: #d92f3e;
+  --brand-hover: #c22835;
+  --text-primary: #171719;
+  --text-secondary: #6b6b76;
+  --border: #e3e3e8;
+  --red-tint: #fceaec;
+  --success: #13875b;
+  --warning: #a66b12;
+  --overlay: rgba(23, 23, 25, 0.4);
+  --shadow: 0 8px 32px rgba(23, 23, 25, 0.08);
+}
+
+@theme inline {
+  --color-bg-app: var(--bg-app);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-raised: var(--bg-raised);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-border: var(--border);
+  --color-red-tint: var(--red-tint);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --font-sans: var(--font-inter);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tabular numerals for money */
+.tabular,
+.money {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+/* Subtle marketing atmosphere */
+.hero-glow {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(227, 50, 64, 0.18), transparent),
+    radial-gradient(ellipse 60% 40% at 90% 10%, rgba(227, 50, 64, 0.08), transparent),
+    var(--bg-app);
+}
+
+.grid-fade {
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black, transparent);
+  opacity: 0.35;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.6s ease-out both;
+}
+
+.animate-fade-up-delay {
+  animation: fade-up 0.6s ease-out 0.15s both;
+}
+
+.animate-fade-up-delay-2 {
+  animation: fade-up 0.6s ease-out 0.3s both;
+}
