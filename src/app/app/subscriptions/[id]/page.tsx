@@ -3,10 +3,11 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Circle } from "lucide-react";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/lib/store";
+import { useWorkspaceData } from "@/lib/workspace-store";
 import { formatKES, formatShortDate } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
@@ -20,11 +21,21 @@ const TABS = [
   "activity",
 ] as const;
 
+type CancelStep = "idle" | "requested" | "merchant_contacted" | "verified";
+
 export default function SubscriptionDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { expenses, requestCancelExpense, archiveExpense, activity } = useApp();
+  const {
+    expenses,
+    requestCancelExpense,
+    confirmCancelExpense,
+    archiveExpense,
+    activity,
+  } = useApp();
+  const { addToGraveyard } = useWorkspaceData();
   const router = useRouter();
   const [tab, setTab] = useState<(typeof TABS)[number]>("overview");
+  const [localStep, setLocalStep] = useState<CancelStep | null>(null);
   const expense = expenses.find((e) => e.id === id);
 
   const history = useMemo(() => expense?.history || [], [expense]);
@@ -39,6 +50,23 @@ export default function SubscriptionDetailPage() {
       </div>
     );
   }
+
+  const step: CancelStep =
+    localStep ||
+    (expense.status === "cancelled"
+      ? "verified"
+      : expense.status === "cancellation_pending"
+        ? "requested"
+        : "idle");
+
+  const steps = [
+    { key: "idle", label: "Not started" },
+    { key: "requested", label: "Request recorded" },
+    { key: "merchant_contacted", label: "Merchant contacted" },
+    { key: "verified", label: "Verified cancelled" },
+  ] as const;
+
+  const stepIndex = steps.findIndex((s) => s.key === step);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -153,33 +181,85 @@ export default function SubscriptionDetailPage() {
         )}
 
         {tab === "cancellation" && (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <p className="text-sm text-text-secondary leading-relaxed">
-              Synsera helps you request and verify cancellation. We never claim “cancelled for
-              you” without verification.
+              Synsera cancellation assistant records your request and tracks verification. We never
+              claim “cancelled for you” without your confirmation.
             </p>
-            {expense.status === "cancellation_pending" ? (
-              <Badge tone="warning">Verification pending</Badge>
-            ) : (
-              <Button
-                variant="danger"
-                onClick={() => {
-                  requestCancelExpense(expense.id);
-                  setTab("cancellation");
-                }}
-              >
-                Request cancellation
-              </Button>
-            )}
-            <Button
-              variant="secondary"
-              onClick={() => {
-                archiveExpense(expense.id);
-                router.push("/app/subscriptions");
-              }}
-            >
-              Archive expense
-            </Button>
+
+            <ol className="space-y-3">
+              {steps.map((s, i) => {
+                const done = i <= stepIndex && step !== "idle";
+                const current = s.key === step;
+                return (
+                  <li key={s.key} className="flex items-center gap-3 text-sm">
+                    {done || current ? (
+                      <CheckCircle2
+                        size={18}
+                        className={current ? "text-brand" : "text-success"}
+                      />
+                    ) : (
+                      <Circle size={18} className="text-text-secondary/40" />
+                    )}
+                    <span
+                      className={cn(
+                        current && "font-medium text-brand",
+                        done && !current && "text-text-primary",
+                        !done && !current && "text-text-secondary",
+                      )}
+                    >
+                      {s.label}
+                    </span>
+                  </li>
+                );
+              })}
+            </ol>
+
+            <div className="flex flex-wrap gap-2">
+              {step === "idle" && (
+                <Button
+                  variant="danger"
+                  onClick={() => {
+                    requestCancelExpense(expense.id);
+                    setLocalStep("requested");
+                  }}
+                >
+                  Request cancellation
+                </Button>
+              )}
+              {step === "requested" && (
+                <Button
+                  onClick={() => setLocalStep("merchant_contacted")}
+                >
+                  Mark merchant contacted
+                </Button>
+              )}
+              {step === "merchant_contacted" && (
+                <Button
+                  onClick={() => {
+                    confirmCancelExpense(expense.id);
+                    addToGraveyard(expense.name, expense.amount);
+                    setLocalStep("verified");
+                  }}
+                >
+                  Confirm verified cancelled
+                </Button>
+              )}
+              {step === "verified" && (
+                <Badge tone="success">Verified — in Subscription Graveyard</Badge>
+              )}
+              {expense.status !== "archived" && (
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    archiveExpense(expense.id);
+                    router.push("/app/subscriptions");
+                  }}
+                >
+                  Archive expense
+                </Button>
+              )}
+            </div>
           </div>
         )}
 

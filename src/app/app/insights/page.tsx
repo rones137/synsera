@@ -2,21 +2,42 @@
 import { PageHeader } from "@/components/app/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { useApp } from "@/lib/store";
+import { useWorkspaceData } from "@/lib/workspace-store";
 import { getDashboardStats, monthlyEquivalent } from "@/lib/demo-data";
 import { formatKES } from "@/lib/format";
+import { useEffect } from "react";
 
 export default function InsightsPage() {
   const { expenses } = useApp();
-  const personal = expenses.filter((e) => e.workspace === "personal" && !["cancelled","archived"].includes(e.status));
+  const { healthScore, recomputeHealth, emergencyMode } = useWorkspaceData();
+  const personal = expenses.filter(e => e.workspace==="personal" && !["cancelled","archived"].includes(e.status));
   const stats = getDashboardStats(personal);
+  const failed = personal.filter(e=>e.status==="failed").length;
+  const trials = personal.filter(e=>e.status==="trial").length;
+  const payday = 50000; // illustrative net payday
+  const pressure = stats.next7;
+  const leftover = payday - pressure;
+
+  useEffect(() => {
+    let score = 85;
+    score -= failed * 12;
+    score -= trials * 4;
+    score -= personal.filter((e) => e.status === "price_changed").length * 5;
+    if (emergencyMode) score -= 8;
+    const next = Math.max(20, Math.min(98, score));
+    queueMicrotask(() => recomputeHealth(next));
+  }, [failed, trials, personal, emergencyMode, recomputeHealth]);
+
   const top = [...personal].sort((a,b)=>monthlyEquivalent(b)-monthlyEquivalent(a)).slice(0,5);
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <PageHeader title="Insights" description="Spend patterns and projections — deterministic maths on your tracked expenses." />
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Annualized" value={formatKES(stats.annualized)} hint="Monthly × 12" emphasize />
+      <PageHeader title="Insights" description="Health score, payday forecast, and spend patterns — deterministic maths." />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Health score" value={`${healthScore}`} hint="0–100 · based on failures, trials, hikes" emphasize />
+        <StatCard label="Payday forecast" value={formatKES(leftover)} hint={`After next-7 of ${formatKES(pressure)} vs ${formatKES(payday)} payday`} />
+        <StatCard label="Annualized" value={formatKES(stats.annualized)} hint="Monthly × 12" />
         <StatCard label="Potential savings" value={formatKES(stats.potentialSavings)} estimate hint="Hypotheses only" />
-        <StatCard label="Active items" value={String(personal.length)} hint="Personal workspace" />
       </div>
       <section className="rounded-xl border border-border bg-bg-surface p-5">
         <h2 className="font-semibold mb-4">Largest monthly commitments</h2>

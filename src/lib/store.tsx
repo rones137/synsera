@@ -71,6 +71,7 @@ type AppContextValue = {
   updateExpense: (id: string, patch: Partial<RecurringExpense>) => void;
   archiveExpense: (id: string) => void;
   requestCancelExpense: (id: string) => void;
+  confirmCancelExpense: (id: string) => void;
   markAlertRead: (id: string) => void;
   markAllAlertsRead: () => void;
   addActivity: (item: Omit<ActivityItem, "id">) => void;
@@ -319,6 +320,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [addActivity],
   );
 
+  const confirmCancelExpense = useCallback(
+    (id: string) => {
+      const name = expenses.find((e) => e.id === id)?.name || id;
+      setExpenses((prev) =>
+        prev.map((e) =>
+          e.id === id ? { ...e, status: "cancelled", updatedAt: stamp() } : e,
+        ),
+      );
+      addActivity({
+        type: "cancelled",
+        title: "Cancellation verified",
+        detail: `${name} marked cancelled after merchant confirmation`,
+        at: stamp(),
+      });
+      setAlerts((prev) => [
+        {
+          id: `att-${Date.now()}`,
+          severity: "info",
+          title: "Cancellation verified",
+          detail: `${name} is cancelled. Added to Subscription Graveyard when you confirm savings.`,
+          expenseId: id,
+          read: false,
+          createdAt: stamp(),
+          category: "system",
+        },
+        ...prev,
+      ]);
+    },
+    [addActivity, expenses],
+  );
+
   const markAlertRead = useCallback((id: string) => {
     setAlerts((prev) => prev.map((a) => (a.id === id ? { ...a, read: true } : a)));
   }, []);
@@ -374,6 +406,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updateExpense,
       archiveExpense,
       requestCancelExpense,
+      confirmCancelExpense,
       markAlertRead,
       markAllAlertsRead,
       addActivity,
@@ -398,6 +431,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updateExpense,
       archiveExpense,
       requestCancelExpense,
+      confirmCancelExpense,
       markAlertRead,
       markAllAlertsRead,
       addActivity,

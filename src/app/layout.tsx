@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { AppProvider } from "@/lib/store";
+import { WorkspaceDataProvider } from "@/lib/workspace-store";
 import "./globals.css";
 
 const inter = Inter({
@@ -27,7 +28,9 @@ export default function RootLayout({
     <html lang="en" data-theme="dark" className={`${inter.variable} h-full`} suppressHydrationWarning>
       <body className="min-h-full font-sans antialiased">
         <ThemeProvider>
-          <AppProvider>{children}</AppProvider>
+          <AppProvider>
+            <WorkspaceDataProvider>{children}</WorkspaceDataProvider>
+          </AppProvider>
         </ThemeProvider>
       </body>
     </html>

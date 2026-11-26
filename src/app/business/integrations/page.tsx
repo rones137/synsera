@@ -1,11 +1,31 @@
 "use client";
+import { useState } from "react";
 import { PageHeader } from "@/components/app/page-header";
-export default function Page() {
+import { Button } from "@/components/ui/button";
+
+const items = [
+  { id: "email", name: "Work email", detail: "Invoice & renewal detection" },
+  { id: "erp", name: "Accounting export", detail: "CSV / QuickBooks-ready" },
+  { id: "sso", name: "SSO (demo)", detail: "Illustrative enterprise login" },
+];
+
+export default function BusinessIntegrationsPage() {
+  const [on, setOn] = useState<Record<string, boolean>>({ email: true });
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <PageHeader title="Integrations" description="Business connectors — scoped permissions only." />
-      <div className="rounded-xl border border-border bg-bg-surface p-6 text-sm text-text-secondary leading-relaxed">
-        Working Integrations demo in Synsera Business. Illustrative sample data for Kenya/KES. No bank passwords required.
+      <PageHeader title="Integrations" description="Connect sources — demo toggles. No bank passwords." />
+      <div className="space-y-3">
+        {items.map((i) => (
+          <div key={i.id} className="flex items-center justify-between rounded-xl border border-border bg-bg-surface p-4">
+            <div>
+              <p className="font-medium">{i.name}</p>
+              <p className="text-xs text-text-secondary">{i.detail}</p>
+            </div>
+            <Button size="sm" variant={on[i.id] ? "secondary" : "primary"} onClick={() => setOn((s) => ({ ...s, [i.id]: !s[i.id] }))}>
+              {on[i.id] ? "Connected" : "Connect"}
+            </Button>
+          </div>
+        ))}
       </div>
     </div>
   );

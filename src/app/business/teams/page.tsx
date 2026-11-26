@@ -1,11 +1,19 @@
 "use client";
 import { PageHeader } from "@/components/app/page-header";
-export default function Page() {
+import { useWorkspaceData } from "@/lib/workspace-store";
+
+export default function TeamsPage() {
+  const { teams } = useWorkspaceData();
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <PageHeader title="Teams" description="Departments and owners — Engineering, Design, Ops." />
-      <div className="rounded-xl border border-border bg-bg-surface p-6 text-sm text-text-secondary leading-relaxed">
-        Working Teams demo in Synsera Business. Illustrative sample data for Kenya/KES. No bank passwords required.
+      <PageHeader title="Teams" description="Departments and owners." />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {teams.map(t => (
+          <div key={t.id} className="rounded-xl border border-border bg-bg-surface p-5">
+            <p className="font-medium">{t.name}</p>
+            <p className="text-xs text-text-secondary mt-1">{t.role} · {t.dept}</p>
+          </div>
+        ))}
       </div>
     </div>
   );

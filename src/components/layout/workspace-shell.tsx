@@ -311,6 +311,32 @@ export function WorkspaceShell({
             </div>
           </header>
           <main className="flex-1 px-4 pb-24 pt-6 sm:px-6 md:pb-8">{children}</main>
+
+          <nav
+            className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border bg-bg-surface/95 backdrop-blur-md md:hidden"
+            aria-label="Mobile"
+          >
+            {items.slice(0, 5).map((item) => {
+              const active =
+                pathname === item.href ||
+                (item.href !== WORKSPACE_META[workspace].home &&
+                  pathname.startsWith(item.href));
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium",
+                    active ? "text-brand" : "text-text-secondary",
+                  )}
+                >
+                  <Icon size={20} />
+                  <span className="truncate max-w-[4.5rem]">{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
         </div>
       </div>
     </AuthGate>
