@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/theme/theme-provider";
+import { AppProvider } from "@/lib/store";
 import "./globals.css";
 
 const inter = Inter({
@@ -16,20 +17,18 @@ export const metadata: Metadata = {
   },
   description:
     "Synsera is a recurring financial intelligence platform. Every recurring payment. Every renewal. Under your control. Built for Kenya & East Africa.",
-  icons: {
-    icon: "/favicon.svg",
-  },
+  icons: { icon: "/favicon.svg" },
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" data-theme="dark" className={`${inter.variable} h-full`} suppressHydrationWarning>
       <body className="min-h-full font-sans antialiased">
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <AppProvider>{children}</AppProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

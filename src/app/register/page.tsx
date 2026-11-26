@@ -6,9 +6,11 @@ import { FormEvent, useState } from "react";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
+import { useApp } from "@/lib/store";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { register } = useApp();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -19,25 +21,23 @@ export default function RegisterPage() {
     const name = String(fd.get("name") || "");
     const email = String(fd.get("email") || "");
     const password = String(fd.get("password") || "");
+    const country = String(fd.get("country") || "KE");
     if (password.length < 8) {
       setError("Password must be at least 8 characters.");
       return;
     }
     setLoading(true);
+    register({ name, email, password, country });
     window.setTimeout(() => {
-      sessionStorage.setItem(
-        "synsera-session",
-        JSON.stringify({ name, email, at: Date.now() }),
-      );
       setLoading(false);
-      router.push("/app");
-    }, 700);
+      router.push("/onboarding");
+    }, 400);
   }
 
   return (
     <AuthShell
       title="Create your Synsera account"
-      subtitle="Start with Personal. Add Business when you’re ready."
+      subtitle="Start with Personal. Add Business and Merchant when you’re ready."
       footer={
         <>
           Already have an account?{" "}
@@ -54,14 +54,7 @@ export default function RegisterPage() {
         </div>
         <div>
           <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            placeholder="you@example.com"
-            required
-          />
+          <Input id="email" name="email" type="email" autoComplete="email" required />
         </div>
         <div>
           <Label htmlFor="password">Password</Label>
@@ -70,17 +63,9 @@ export default function RegisterPage() {
             name="password"
             type="password"
             autoComplete="new-password"
-            placeholder="At least 8 characters"
             minLength={8}
             required
           />
-        </div>
-        <div>
-          <Label htmlFor="workspace">Primary workspace</Label>
-          <Select id="workspace" name="workspace" defaultValue="personal">
-            <option value="personal">Personal</option>
-            <option value="business">Business (coming soon)</option>
-          </Select>
         </div>
         <div>
           <Label htmlFor="country">Country / currency</Label>
@@ -96,8 +81,7 @@ export default function RegisterPage() {
           {loading ? "Creating…" : "Create account"}
         </Button>
         <p className="text-xs text-text-secondary">
-          By continuing you agree that Synsera will never request M-PESA PINs or bank
-          passwords. Auth is mock/client-ready for MVP — Supabase can be wired next.
+          We never ask for M-PESA PIN or bank passwords. Session stored locally for this MVP demo.
         </p>
       </form>
     </AuthShell>

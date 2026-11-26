@@ -16,35 +16,36 @@ import { Badge, StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StatCard, StatCardSkeleton } from "@/components/ui/stat-card";
 import { TableSkeleton } from "@/components/ui/skeleton";
-import {
-  DEMO_ACTIVITY,
-  DEMO_ATTENTION,
-  DEMO_USER,
-  getDashboardStats,
-} from "@/lib/demo-data";
-import { useExpenses } from "@/lib/expenses-store";
+import { getDashboardStats } from "@/lib/demo-data";
+import { useApp } from "@/lib/store";
 import { formatKES, formatShortDate } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
 export default function DashboardPage() {
-  const { expenses } = useExpenses();
+  const { expenses, alerts, activity, user, setWorkspace } = useApp();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    setWorkspace("personal");
     const t = window.setTimeout(() => setReady(true), 280);
     return () => window.clearTimeout(t);
-  }, []);
+  }, [setWorkspace]);
 
-  const stats = getDashboardStats(expenses);
+  const personal = expenses.filter(
+    (e) => e.workspace === "personal" && !["cancelled", "archived"].includes(e.status),
+  );
+  const stats = getDashboardStats(personal);
+  const attention = alerts.filter((a) => !a.read).slice(0, 3);
 
-  const upcoming = [...expenses]
-    .filter((e) => e.status !== "cancelled")
+  const upcoming = [...personal]
     .sort(
       (a, b) =>
         new Date(a.nextBillingDate).getTime() -
         new Date(b.nextBillingDate).getTime(),
     )
     .slice(0, 6);
+
+  const firstName = user?.name?.split(" ")[0] || "there";
 
   return (
     <div className="mx-auto max-w-6xl space-y-7">
@@ -54,7 +55,7 @@ export default function DashboardPage() {
             Illustrative sample data
           </Badge>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-[1.75rem]">
-            Welcome back, {DEMO_USER.name.split(" ")[0]}
+            Welcome back, {firstName}
           </h1>
           <p className="mt-1.5 text-sm text-text-secondary">
             Personal workspace · Your money. Your rules. ·{" "}
@@ -115,10 +116,7 @@ export default function DashboardPage() {
             <h2 className="text-[15px] font-semibold tracking-tight">
               Upcoming payments
             </h2>
-            <Link
-              href="/app/expenses"
-              className="text-sm font-medium text-brand hover:underline"
-            >
+            <Link href="/app/expenses" className="text-sm font-medium text-brand hover:underline">
               View all
             </Link>
           </div>
@@ -142,7 +140,12 @@ export default function DashboardPage() {
                       className="border-b border-border/60 last:border-0 transition-colors hover:bg-bg-raised/35"
                     >
                       <td className="px-5 py-3.5">
-                        <p className="font-medium text-text-primary">{e.name}</p>
+                        <Link
+                          href={`/app/subscriptions/${e.id}`}
+                          className="font-medium text-text-primary hover:text-brand"
+                        >
+                          {e.name}
+                        </Link>
                         <p className="mt-0.5 text-xs text-text-secondary">
                           {e.paymentMethod}
                         </p>
@@ -165,14 +168,19 @@ export default function DashboardPage() {
         </section>
 
         <section className="overflow-hidden rounded-xl border border-border bg-bg-surface">
-          <div className="flex items-center gap-2 border-b border-border px-5 py-4">
-            <AlertTriangle size={15} className="text-brand" strokeWidth={2} />
-            <h2 className="text-[15px] font-semibold tracking-tight">
-              Attention required
-            </h2>
+          <div className="flex items-center justify-between border-b border-border px-5 py-4">
+            <div className="flex items-center gap-2">
+              <AlertTriangle size={15} className="text-brand" strokeWidth={2} />
+              <h2 className="text-[15px] font-semibold tracking-tight">
+                Attention required
+              </h2>
+            </div>
+            <Link href="/app/alerts" className="text-xs text-brand hover:underline">
+              Alerts
+            </Link>
           </div>
           <ul className="divide-y divide-border">
-            {DEMO_ATTENTION.map((a) => (
+            {attention.map((a) => (
               <li key={a.id} className="px-5 py-4">
                 <div className="flex items-start gap-2.5">
                   {a.severity === "danger" ? (
@@ -209,12 +217,10 @@ export default function DashboardPage() {
       <div className="grid gap-5 lg:grid-cols-3">
         <section className="overflow-hidden rounded-xl border border-border bg-bg-surface lg:col-span-2">
           <div className="border-b border-border px-5 py-4">
-            <h2 className="text-[15px] font-semibold tracking-tight">
-              Recent activity
-            </h2>
+            <h2 className="text-[15px] font-semibold tracking-tight">Recent activity</h2>
           </div>
           <ul className="divide-y divide-border">
-            {DEMO_ACTIVITY.map((a) => (
+            {activity.slice(0, 5).map((a) => (
               <li
                 key={a.id}
                 className="flex items-start justify-between gap-4 px-5 py-3.5"
@@ -234,31 +240,20 @@ export default function DashboardPage() {
         <section className="rounded-xl border border-border bg-bg-surface p-5">
           <h2 className="text-[15px] font-semibold tracking-tight">Quick actions</h2>
           <div className="mt-4 space-y-2">
-            <Link href="/app/expenses/new" className="block">
-              <Button variant="secondary" className="w-full justify-between">
-                Add recurring expense
-                <ArrowRight size={16} />
-              </Button>
-            </Link>
-            <Link href="/app/subscriptions" className="block">
-              <Button variant="secondary" className="w-full justify-between">
-                Review subscriptions
-                <ArrowRight size={16} />
-              </Button>
-            </Link>
-            <Link href="/app/expenses" className="block">
-              <Button variant="secondary" className="w-full justify-between">
-                Browse all expenses
-                <ArrowRight size={16} />
-              </Button>
-            </Link>
-          </div>
-          <div className="mt-5 rounded-lg border border-dashed border-border bg-bg-app p-4">
-            <p className="text-sm font-medium">AI recommendations</p>
-            <p className="mt-1.5 text-xs leading-relaxed text-text-secondary">
-              Placeholder for AI Detective. No invented savings — suggestions will
-              carry confidence labels when enabled.
-            </p>
+            {[
+              ["/app/expenses/new", "Add recurring expense"],
+              ["/app/import", "Import CSV"],
+              ["/app/receipts", "Upload receipt"],
+              ["/app/calendar", "Open calendar"],
+              ["/business", "Switch to Business"],
+            ].map(([href, label]) => (
+              <Link key={href} href={href} className="block">
+                <Button variant="secondary" className="w-full justify-between">
+                  {label}
+                  <ArrowRight size={16} />
+                </Button>
+              </Link>
+            ))}
           </div>
         </section>
       </div>

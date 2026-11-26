@@ -5,25 +5,30 @@ const cols = [
   {
     title: "Product",
     links: [
-      { href: "/#features", label: "Features" },
+      { href: "/personal", label: "Personal" },
+      { href: "/for-business", label: "Business" },
+      { href: "/for-merchant", label: "Merchant Billing" },
+      { href: "/features", label: "Features" },
       { href: "/pricing", label: "Pricing" },
       { href: "/security", label: "Security" },
     ],
   },
   {
-    title: "Workspaces",
+    title: "Company",
     links: [
-      { href: "/#personal-business", label: "Personal" },
-      { href: "/#personal-business", label: "Business" },
-      { href: "/#personal-business", label: "Merchant Billing" },
+      { href: "/about", label: "About" },
+      { href: "/contact", label: "Contact" },
+      { href: "/help", label: "Help" },
+      { href: "/docs", label: "Docs" },
     ],
   },
   {
-    title: "Company",
+    title: "Legal",
     links: [
-      { href: "/#faq", label: "FAQ" },
-      { href: "/security", label: "Privacy" },
+      { href: "/privacy", label: "Privacy" },
+      { href: "/terms", label: "Terms" },
       { href: "/login", label: "Sign in" },
+      { href: "/register", label: "Register" },
     ],
   },
 ];

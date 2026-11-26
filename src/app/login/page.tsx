@@ -1,16 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useState } from "react";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
+import { useApp } from "@/lib/store";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const params = useSearchParams();
+  const { login, user } = useApp();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  if (user?.onboardingComplete) {
+    router.replace(params.get("next") || "/app");
+  }
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -23,15 +30,11 @@ export default function LoginPage() {
       return;
     }
     setLoading(true);
-    // Client-ready mock — swap for Supabase Auth when env is configured
+    login(email, password);
     window.setTimeout(() => {
-      sessionStorage.setItem(
-        "synsera-session",
-        JSON.stringify({ email, at: Date.now() }),
-      );
       setLoading(false);
-      router.push("/app");
-    }, 600);
+      router.push(params.get("next") || "/app");
+    }, 400);
   }
 
   return (
@@ -56,6 +59,7 @@ export default function LoginPage() {
             type="email"
             autoComplete="email"
             placeholder="you@example.com"
+            defaultValue="blaise@synsera.app"
             required
           />
         </div>
@@ -64,10 +68,7 @@ export default function LoginPage() {
             <Label htmlFor="password" className="mb-0">
               Password
             </Label>
-            <Link
-              href="/reset-password"
-              className="text-xs text-brand hover:underline"
-            >
+            <Link href="/reset-password" className="text-xs text-brand hover:underline">
               Forgot password?
             </Link>
           </div>
@@ -77,6 +78,7 @@ export default function LoginPage() {
             type="password"
             autoComplete="current-password"
             placeholder="••••••••"
+            defaultValue="demo-password"
             required
           />
         </div>
@@ -85,9 +87,17 @@ export default function LoginPage() {
           {loading ? "Signing in…" : "Log in"}
         </Button>
         <p className="text-center text-xs text-text-secondary">
-          Demo mode: any email/password opens the sample dashboard.
+          Demo auth persists in localStorage. Any password works.
         </p>
       </form>
     </AuthShell>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="p-10 text-center text-sm text-text-secondary">Loading…</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

@@ -6,12 +6,12 @@ import { FormEvent, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
-import { useExpenses } from "@/lib/expenses-store";
-import type { BillingCycle } from "@/lib/demo-data";
+import { useApp } from "@/lib/store";
+import type { BillingCycle } from "@/lib/types";
 
 export default function NewExpensePage() {
   const router = useRouter();
-  const { addExpense } = useExpenses();
+  const { addExpense } = useApp();
   const [loading, setLoading] = useState(false);
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
@@ -29,6 +29,7 @@ export default function NewExpensePage() {
       category: String(fd.get("category")),
       paymentMethod: String(fd.get("paymentMethod")),
       notes: String(fd.get("notes") || "") || undefined,
+      workspace: "personal",
     });
     router.push("/app/expenses");
   }
@@ -45,7 +46,7 @@ export default function NewExpensePage() {
         </Link>
         <h1 className="text-2xl font-semibold tracking-tight">Add expense</h1>
         <p className="mt-1 text-sm text-text-secondary">
-          Manual recurring entry for the MVP demo. Saved in local session state.
+          Persists in localStorage for this demo. Never enter M-PESA PIN or bank passwords.
         </p>
       </div>
 
@@ -55,12 +56,7 @@ export default function NewExpensePage() {
       >
         <div>
           <Label htmlFor="name">Name</Label>
-          <Input
-            id="name"
-            name="name"
-            placeholder="e.g. Netflix Premium"
-            required
-          />
+          <Input id="name" name="name" placeholder="e.g. Netflix Premium" required />
         </div>
         <div>
           <Label htmlFor="merchant">Merchant</Label>
@@ -74,7 +70,6 @@ export default function NewExpensePage() {
               name="amount"
               type="number"
               min={1}
-              step={1}
               placeholder="1400"
               required
               className="money"
@@ -125,16 +120,8 @@ export default function NewExpensePage() {
         </div>
         <div>
           <Label htmlFor="notes">Notes (optional)</Label>
-          <Textarea
-            id="notes"
-            name="notes"
-            placeholder="e.g. Shared with family / trial ends soon"
-          />
+          <Textarea id="notes" name="notes" placeholder="Optional context" />
         </div>
-        <p className="text-xs text-text-secondary">
-          Synsera never asks for M-PESA PIN or bank passwords — only labels for how
-          you pay.
-        </p>
         <div className="flex gap-3 pt-2">
           <Button type="submit" disabled={loading} className="flex-1">
             {loading ? "Saving…" : "Save expense"}

@@ -1,11 +1,24 @@
 import type { Metadata } from "next";
-import { AppShell } from "@/components/layout/app-shell";
+import { Suspense } from "react";
+import { WorkspaceShell } from "@/components/layout/workspace-shell";
 
 export const metadata: Metadata = {
-  title: "Dashboard",
-  description: "Synsera Personal workspace overview",
+  title: "Personal",
+  description: "Synsera Personal workspace",
 };
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
-  return <AppShell>{children}</AppShell>;
+function ShellFallback() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-bg-app text-sm text-text-secondary">
+      Loading Synsera…
+    </div>
+  );
+}
+
+export default function PersonalLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<ShellFallback />}>
+      <WorkspaceShell workspace="personal">{children}</WorkspaceShell>
+    </Suspense>
+  );
 }

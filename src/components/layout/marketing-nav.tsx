@@ -9,8 +9,10 @@ import { useTheme } from "@/components/theme/theme-provider";
 import { cn } from "@/lib/cn";
 
 const links = [
-  { href: "/#features", label: "Features" },
-  { href: "/#personal-business", label: "Workspaces" },
+  { href: "/personal", label: "Personal" },
+  { href: "/for-business", label: "Business" },
+  { href: "/for-merchant", label: "Merchant" },
+  { href: "/features", label: "Features" },
   { href: "/pricing", label: "Pricing" },
   { href: "/security", label: "Security" },
 ];
@@ -23,7 +25,7 @@ export function MarketingNav() {
     <header className="sticky top-0 z-40 border-b border-border/50 bg-bg-app/75 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <SynseraLogo />
-        <nav className="hidden items-center gap-7 md:flex">
+        <nav className="hidden items-center gap-6 lg:flex">
           {links.map((l) => (
             <Link
               key={l.href}

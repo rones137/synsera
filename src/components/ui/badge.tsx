@@ -1,5 +1,5 @@
 import { cn } from "@/lib/cn";
-import type { ExpenseStatus } from "@/lib/demo-data";
+import type { ExpenseStatus } from "@/lib/types";
 
 const statusStyles: Record<ExpenseStatus, string> = {
   active: "bg-success/15 text-success",
@@ -9,6 +9,7 @@ const statusStyles: Record<ExpenseStatus, string> = {
   failed: "bg-brand/15 text-brand",
   cancellation_pending: "bg-warning/10 text-warning",
   cancelled: "bg-bg-raised text-text-secondary",
+  archived: "bg-bg-raised text-text-secondary",
 };
 
 const statusLabels: Record<ExpenseStatus, string> = {
@@ -19,6 +20,7 @@ const statusLabels: Record<ExpenseStatus, string> = {
   failed: "Failed",
   cancellation_pending: "Cancel pending",
   cancelled: "Cancelled",
+  archived: "Archived",
 };
 
 export function Badge({
