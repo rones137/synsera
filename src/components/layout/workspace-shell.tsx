@@ -29,7 +29,7 @@ import {
   WORKSPACE_META,
   type NavItem,
 } from "./nav-config";
-import type { WorkspaceKind } from "@/lib/types";
+import type { UserProfile, WorkspaceKind } from "@/lib/types";
 
 function navFor(ws: WorkspaceKind): NavItem[] {
   if (ws === "business") return BUSINESS_NAV;
@@ -37,43 +37,38 @@ function navFor(ws: WorkspaceKind): NavItem[] {
   return PERSONAL_NAV;
 }
 
-export function WorkspaceShell({
+function BuildingGlyph({ workspace }: { workspace: WorkspaceKind }) {
+  const Icon = WORKSPACE_META[workspace].icon;
+  return <Icon size={16} />;
+}
+
+/** Module-scope sidebar — must not be declared inside WorkspaceShell (remounts kill clicks). */
+function SidebarInner({
+  compact,
   workspace,
-  children,
+  pathname,
+  items,
+  user,
+  wsOpen,
+  setWsOpen,
+  setMobileOpen,
+  switchWs,
+  addHref,
+  onLogout,
 }: {
+  compact: boolean;
   workspace: WorkspaceKind;
-  children: ReactNode;
+  pathname: string;
+  items: NavItem[];
+  user: UserProfile | null;
+  wsOpen: boolean;
+  setWsOpen: (v: boolean | ((p: boolean) => boolean)) => void;
+  setMobileOpen: (v: boolean) => void;
+  switchWs: (w: WorkspaceKind) => void;
+  addHref: string;
+  onLogout: () => void;
 }) {
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [wsOpen, setWsOpen] = useState(false);
-  const pathname = usePathname();
-  const router = useRouter();
-  const { user, setWorkspace, logout, alerts } = useApp();
-  const { theme, setTheme, resolved } = useTheme();
-  const items = navFor(workspace);
-  const unread = alerts.filter((a) => !a.read).length;
-
-  const cycleTheme = () => {
-    const order: ThemeMode[] = ["dark", "light", "system"];
-    setTheme(order[(order.indexOf(theme) + 1) % order.length]);
-  };
-  const ThemeIcon = theme === "system" ? Monitor : resolved === "dark" ? Moon : Sun;
-
-  const switchWs = (w: WorkspaceKind) => {
-    setWorkspace(w);
-    setWsOpen(false);
-    router.push(WORKSPACE_META[w].home);
-  };
-
-  const addHref =
-    workspace === "personal"
-      ? "/app/expenses/new"
-      : workspace === "business"
-        ? "/business/expenses"
-        : "/merchant/plans";
-
-  const SidebarInner = ({ compact }: { compact: boolean }) => (
+  return (
     <>
       <div
         className={cn(
@@ -81,7 +76,11 @@ export function WorkspaceShell({
           compact ? "justify-center" : "justify-between",
         )}
       >
-        {compact ? <SynseraMark /> : <SynseraLogo href={WORKSPACE_META[workspace].home} />}
+        {compact ? (
+          <SynseraMark />
+        ) : (
+          <SynseraLogo href={WORKSPACE_META[workspace].home} />
+        )}
         {!compact && (
           <button
             type="button"
@@ -160,6 +159,7 @@ export function WorkspaceShell({
               key={item.href}
               href={item.href}
               title={compact ? item.label : undefined}
+              prefetch
               onClick={() => setMobileOpen(false)}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
@@ -177,7 +177,7 @@ export function WorkspaceShell({
       </nav>
 
       {!compact && (
-        <div className="border-t border-border p-4 space-y-2">
+        <div className="space-y-2 border-t border-border p-4">
           <p className="text-xs text-text-secondary">
             {WORKSPACE_META[workspace].label} · {user?.currency || "KES"}
           </p>
@@ -186,10 +186,7 @@ export function WorkspaceShell({
           </p>
           <button
             type="button"
-            onClick={() => {
-              logout();
-              router.push("/login");
-            }}
+            onClick={onLogout}
             className="flex items-center gap-2 text-xs text-text-secondary hover:text-brand"
           >
             <LogOut size={14} /> Log out
@@ -198,6 +195,60 @@ export function WorkspaceShell({
       )}
     </>
   );
+}
+
+export function WorkspaceShell({
+  workspace,
+  children,
+}: {
+  workspace: WorkspaceKind;
+  children: ReactNode;
+}) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [wsOpen, setWsOpen] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
+  const { user, setWorkspace, logout, alerts } = useApp();
+  const { theme, setTheme, resolved } = useTheme();
+  const items = navFor(workspace);
+  const unread = alerts.filter((a) => !a.read).length;
+
+  const cycleTheme = () => {
+    const order: ThemeMode[] = ["dark", "light", "system"];
+    setTheme(order[(order.indexOf(theme) + 1) % order.length]);
+  };
+  const ThemeIcon =
+    theme === "system" ? Monitor : resolved === "dark" ? Moon : Sun;
+
+  const switchWs = (w: WorkspaceKind) => {
+    setWorkspace(w);
+    setWsOpen(false);
+    router.push(WORKSPACE_META[w].home);
+  };
+
+  const addHref =
+    workspace === "personal"
+      ? "/app/expenses/new"
+      : workspace === "business"
+        ? "/business/expenses"
+        : "/merchant/plans";
+
+  const sidebarProps = {
+    workspace,
+    pathname,
+    items,
+    user,
+    wsOpen,
+    setWsOpen,
+    setMobileOpen,
+    switchWs,
+    addHref,
+    onLogout: () => {
+      void logout();
+      router.push("/login");
+    },
+  };
 
   return (
     <AuthGate>
@@ -208,13 +259,11 @@ export function WorkspaceShell({
             collapsed ? "w-[72px]" : "w-[248px]",
           )}
         >
-          <SidebarInner compact={collapsed} />
+          <SidebarInner compact={collapsed} {...sidebarProps} />
           <button
             type="button"
             onClick={() => setCollapsed((c) => !c)}
-            className={cn(
-              "absolute -right-3 top-5 z-40 flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-bg-surface text-text-secondary shadow",
-            )}
+            className="absolute -right-3 top-5 z-40 flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-bg-surface text-text-secondary shadow"
             aria-label="Toggle sidebar"
           >
             {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
@@ -230,7 +279,7 @@ export function WorkspaceShell({
               onClick={() => setMobileOpen(false)}
             />
             <div className="absolute inset-y-0 left-0 flex w-[248px] flex-col border-r border-border bg-bg-surface">
-              <SidebarInner compact={false} />
+              <SidebarInner compact={false} {...sidebarProps} />
             </div>
           </div>
         )}
@@ -271,7 +320,11 @@ export function WorkspaceShell({
                 </Link>
               )}
               <Link
-                href={workspace === "personal" ? "/app/alerts" : WORKSPACE_META[workspace].home}
+                href={
+                  workspace === "personal"
+                    ? "/app/alerts"
+                    : WORKSPACE_META[workspace].home
+                }
                 className="relative flex h-9 w-9 items-center justify-center rounded-lg text-text-secondary hover:bg-bg-raised"
               >
                 <Bell size={18} />
@@ -332,7 +385,7 @@ export function WorkspaceShell({
                   )}
                 >
                   <Icon size={20} />
-                  <span className="truncate max-w-[4.5rem]">{item.label}</span>
+                  <span className="max-w-[4.5rem] truncate">{item.label}</span>
                 </Link>
               );
             })}
@@ -341,9 +394,4 @@ export function WorkspaceShell({
       </div>
     </AuthGate>
   );
-}
-
-function BuildingGlyph({ workspace }: { workspace: WorkspaceKind }) {
-  const Icon = WORKSPACE_META[workspace].icon;
-  return <Icon size={16} />;
 }

@@ -22,8 +22,7 @@ function isWorkspacePath(pathname: string) {
 
 /**
  * Client auth wrapper for workspace shells.
- * Never returns null (avoids blank UI / dropped Cache Component segments).
- * Auto-seeds a demo session for workspace routes.
+ * Seeds at most once per mount (ref) to avoid remount storms that detach sidebar links.
  */
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { ready, user, login } = useApp();
@@ -38,21 +37,23 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       const skip =
         typeof window !== "undefined" &&
         localStorage.getItem("synsera-skip-auth") === "1";
-      if (skip || isWorkspacePath(pathname)) {
-        if (!seeded.current) {
-          seeded.current = true;
-          login("blaise@synsera.app", "demo", "Blaise Rolys");
-        }
+      if ((skip || isWorkspacePath(pathname)) && !seeded.current) {
+        seeded.current = true;
+        void login("blaise@synsera.app", "demo", "Blaise Rolys");
         return;
       }
-      router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+      if (!skip && !isWorkspacePath(pathname)) {
+        router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+      }
       return;
     }
 
     if (!user.onboardingComplete && !pathname.startsWith("/onboarding")) {
       router.replace("/onboarding");
     }
-  }, [ready, user, router, pathname, login]);
+    // Intentionally omit `login` from deps — stable enough; including it remounted shells.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, user, router, pathname]);
 
   if (!ready) {
     return <LoadingScreen />;
@@ -63,7 +64,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       <LoadingScreen
         label={
           isWorkspacePath(pathname)
-            ? "Opening Synsera demo…"
+            ? "Opening Synsera…"
             : "Redirecting to log in…"
         }
       />
